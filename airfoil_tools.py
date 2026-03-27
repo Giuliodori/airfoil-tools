@@ -516,17 +516,17 @@ class App:
 
     def setup_dark_theme(self):
         self.colors = {
-            "bg": "#0f172a",
-            "panel": "#1e293b",
-            "panel_alt": "#dde5f0",
-            "fg": "#1d2939",
-            "muted": "#667085",
-            "accent": "#1570ef",
-            "accent_alt": "#175cd3",
-            "entry": "#ffffff",
-            "text": "#e2e8f0",
-            "plot_bg": "#ffffff",
-            "grid": "#d0d5dd",
+            "bg": "#202124",
+            "panel": "#292a2d",
+            "panel_alt": "#3c4043",
+            "fg": "#e8eaed",
+            "muted": "#9aa0a6",
+            "accent": "#8ab4f8",
+            "accent_alt": "#669df6",
+            "entry": "#303134",
+            "text": "#e8eaed",
+            "plot_bg": "#202124",
+            "grid": "#5f6368",
         }
         self.root.configure(bg=self.colors["bg"])
 
