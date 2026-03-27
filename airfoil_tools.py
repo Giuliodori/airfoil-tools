@@ -605,7 +605,7 @@ class App:
         right = ttk.Frame(main)
         right.pack(side="left", fill="both", expand=True)
 
-        self.build_logo_header(left)
+        # Logo moved inside Aerodynamics panel (bottom-right under overrides)
 
         self.code_var = tk.StringVar(value="2412")
         self.chord_var = tk.StringVar(value="100")
@@ -798,6 +798,7 @@ class App:
         ttk.Separator(aero, orient="horizontal").grid(row=arow, column=0, columnspan=4, sticky="ew", pady=3)
 
         arow += 1
+        metrics_start_row = arow
         ttk.Label(aero, text="Reynolds [-]").grid(row=arow, column=0, sticky="w", pady=1)
         ttk.Label(aero, textvariable=self.reynolds_out_var).grid(row=arow, column=1, sticky="w", pady=1)
         arow += 1
@@ -815,6 +816,32 @@ class App:
         arow += 1
         ttk.Label(aero, text="L/D").grid(row=arow, column=0, sticky="w", pady=1)
         ttk.Label(aero, textvariable=self.ld_out_var).grid(row=arow, column=1, sticky="w", pady=1)
+
+        logo_path = ""
+        for candidate in (
+            os.path.join("images", "logo_airfoil_tools_clean.png"),
+            os.path.join("images", "logo_airfoil_tools.png"),
+        ):
+            if os.path.exists(candidate):
+                logo_path = candidate
+                break
+        if logo_path:
+            try:
+                logo_image = tk.PhotoImage(file=logo_path)
+                target_width = 112
+                if logo_image.width() > target_width:
+                    downsample = max(1, math.ceil(logo_image.width() / target_width))
+                    logo_image = logo_image.subsample(downsample, downsample)
+                self.logo_image = logo_image
+                ttk.Label(aero, image=self.logo_image).grid(
+                    row=metrics_start_row,
+                    column=3,
+                    rowspan=6,
+                    sticky="se",
+                    pady=(0, 2),
+                )
+            except Exception:
+                self.logo_image = None
 
         actions = ttk.LabelFrame(left, text="Actions", padding=8)
         actions.pack(fill="x", pady=(6, 0))
