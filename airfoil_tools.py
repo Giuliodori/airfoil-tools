@@ -516,17 +516,17 @@ class App:
 
     def setup_dark_theme(self):
         self.colors = {
-            "bg": "#f2f4f8",
+            "bg": "#eef2f7",
             "panel": "#ffffff",
-            "panel_alt": "#e7ecf5",
-            "fg": "#1f2a3a",
-            "muted": "#6e7f95",
-            "accent": "#1f7ae0",
-            "accent_alt": "#1962b4",
+            "panel_alt": "#dde5f0",
+            "fg": "#1d2939",
+            "muted": "#667085",
+            "accent": "#1570ef",
+            "accent_alt": "#175cd3",
             "entry": "#ffffff",
-            "text": "#1f2a3a",
+            "text": "#1d2939",
             "plot_bg": "#ffffff",
-            "grid": "#cfd8e6",
+            "grid": "#d0d5dd",
         }
         self.root.configure(bg=self.colors["bg"])
 
@@ -546,11 +546,11 @@ class App:
         style.map("TCombobox", fieldbackground=[("readonly", self.colors["entry"])], foreground=[("readonly", self.colors["text"])])
         style.configure("TCheckbutton", background=self.colors["panel"], foreground=self.colors["fg"])
         style.map("TCheckbutton", background=[("active", self.colors["panel_alt"])], foreground=[("disabled", self.colors["muted"])])
-        style.configure("TButton", background=self.colors["panel_alt"], foreground=self.colors["fg"], borderwidth=1, focuscolor=self.colors["accent"], padding=(8, 5))
+        style.configure("TButton", background=self.colors["panel_alt"], foreground=self.colors["fg"], borderwidth=1, focuscolor=self.colors["accent"], padding=(10, 6))
         style.map("TButton", background=[("active", self.colors["accent"]), ("pressed", self.colors["accent_alt"])], foreground=[("active", "#ffffff")])
-        style.configure("KPIValue.TLabel", background=self.colors["panel"], foreground=self.colors["accent"], font=("Segoe UI", 18, "bold"))
-        style.configure("KPIValueAlt.TLabel", background=self.colors["panel"], foreground=self.colors["accent_alt"], font=("Segoe UI", 18, "bold"))
-        style.configure("Footer.TLabel", background=self.colors["bg"], foreground=self.colors["muted"], font=("Segoe UI", 8))
+        style.configure("KPIValue.TLabel", background=self.colors["panel"], foreground=self.colors["accent"], font=("Segoe UI", 20, "bold"))
+        style.configure("KPIValueAlt.TLabel", background=self.colors["panel"], foreground=self.colors["accent_alt"], font=("Segoe UI", 20, "bold"))
+        style.configure("Footer.TLabel", background=self.colors["bg"], foreground=self.colors["muted"], font=("Segoe UI", 9))
 
     def build_logo_header(self, parent):
         logo_path = os.path.join("images", "logo_airfoil_tools.png")
@@ -884,7 +884,7 @@ class App:
             justify="left",
         ).pack(anchor="w")
 
-        graph_frame = ttk.LabelFrame(right, text="Airfoil plot (live)", padding=6)
+        graph_frame = ttk.LabelFrame(right, text="Airfoil plot (live)", padding=8)
         graph_frame.pack(fill="both", expand=True)
 
         self.figure = Figure(figsize=(7, 4.8), dpi=100)
@@ -894,7 +894,7 @@ class App:
         self.canvas = FigureCanvasTkAgg(self.figure, master=graph_frame)
         self.canvas.get_tk_widget().pack(fill="both", expand=True)
 
-        kpi_frame = ttk.LabelFrame(right, text="Flight KPIs", padding=8)
+        kpi_frame = ttk.LabelFrame(right, text="Flight KPIs", padding=10)
         kpi_frame.pack(fill="x", expand=False, pady=(8, 0))
         kpi_frame.columnconfigure(1, weight=1)
         kpi_frame.columnconfigure(3, weight=1)
@@ -903,7 +903,7 @@ class App:
         ttk.Label(kpi_frame, text="Drag [kg]").grid(row=0, column=2, sticky="w")
         ttk.Label(kpi_frame, textvariable=self.drag_out_var, style="KPIValueAlt.TLabel").grid(row=0, column=3, sticky="w", padx=(4, 0))
 
-        preview_frame = ttk.LabelFrame(right, text=".pts preview", padding=6)
+        preview_frame = ttk.LabelFrame(right, text=".pts preview", padding=8)
         preview_frame.pack(fill="x", expand=False, pady=(8, 0))
 
         summary = ttk.Frame(preview_frame)
@@ -921,8 +921,8 @@ class App:
         self.text = tk.Text(
             text_row,
             wrap="none",
-            font=("Consolas", 9),
-            height=5,
+            font=("Consolas", 10),
+            height=6,
             bg=self.colors["entry"],
             fg=self.colors["text"],
             insertbackground=self.colors["text"],
