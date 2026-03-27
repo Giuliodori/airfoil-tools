@@ -504,16 +504,16 @@ class App:
 
     def setup_dark_theme(self):
         self.colors = {
-            "bg": "#1a1b1e",
-            "panel": "#22252a",
-            "panel_alt": "#2b3036",
-            "fg": "#e6efe9",
-            "muted": "#9fb3a8",
-            "accent": "#2fa36b",
-            "entry": "#14171b",
-            "text": "#d8e6de",
-            "plot_bg": "#121519",
-            "grid": "#3d4f46",
+            "bg": "#1e1e1e",
+            "panel": "#252526",
+            "panel_alt": "#2d2d30",
+            "fg": "#d4d4d4",
+            "muted": "#9da0a6",
+            "accent": "#0e639c",
+            "entry": "#3c3c3c",
+            "text": "#f3f3f3",
+            "plot_bg": "#1e1e1e",
+            "grid": "#3f3f46",
         }
         self.root.configure(bg=self.colors["bg"])
 
@@ -547,10 +547,10 @@ class App:
         right.pack(side="left", fill="both", expand=True)
 
         self.code_var = tk.StringVar(value="0030")
-        self.chord_var = tk.StringVar(value="1.0")
+        self.chord_var = tk.StringVar(value="1000")
         self.n_side_var = tk.StringVar(value="100")
         self.mode_var = tk.StringVar(value="Profilo piano")
-        self.radius_var = tk.StringVar(value="5.0")
+        self.radius_var = tk.StringVar(value="5000")
         self.curvature_dir_var = tk.StringVar(value="convex")
         self.keep_developed_var = tk.BooleanVar(value=True)
         self.angle_var = tk.StringVar(value="0")
@@ -559,11 +559,10 @@ class App:
         self.mirror_y_var = tk.BooleanVar(value=False)
         self.use_internal_aero_var = tk.BooleanVar(value=True)
         self.fluid_var = tk.StringVar(value="air")
-        self.velocity_var = tk.StringVar(value="20.0")
-        self.aero_chord_var = tk.StringVar(value="1.0")
-        self.span_var = tk.StringVar(value="1.0")
-        self.area_var = tk.StringVar(value="")
-        self.alpha_attack_var = tk.StringVar(value="4.0")
+        self.velocity_var = tk.StringVar(value="72.0")
+        self.aero_chord_var = tk.StringVar(value="1000")
+        self.span_var = tk.StringVar(value="1000")
+        self.alpha_attack_var = tk.StringVar(value="0.0")
         self.density_var = tk.StringVar(value=str(FLUID_PRESETS["air"]["rho"]))
         self.viscosity_var = tk.StringVar(value=str(FLUID_PRESETS["air"]["mu"]))
         self.override_cd0_var = tk.StringVar(value="")
@@ -605,7 +604,7 @@ class App:
         self.mode_combo = mode_combo
 
         row += 1
-        ttk.Label(geom, text="Corda [m]").grid(row=row, column=0, sticky="w", padx=(0, 4), pady=2)
+        ttk.Label(geom, text="Corda [mm]").grid(row=row, column=0, sticky="w", padx=(0, 4), pady=2)
         e = ttk.Entry(geom, textvariable=self.chord_var, width=10)
         e.grid(row=row, column=1, sticky="ew", pady=2)
         e.bind("<KeyRelease>", self.schedule_update)
@@ -620,7 +619,7 @@ class App:
         trans.columnconfigure(3, weight=1)
 
         row = 0
-        ttk.Label(trans, text="Raggio [m]").grid(row=row, column=0, sticky="w", padx=(0, 4), pady=2)
+        ttk.Label(trans, text="Raggio [mm]").grid(row=row, column=0, sticky="w", padx=(0, 4), pady=2)
         self.radius_entry = ttk.Entry(trans, textvariable=self.radius_var, width=10)
         self.radius_entry.grid(row=row, column=1, sticky="ew", pady=2)
         self.radius_entry.bind("<KeyRelease>", self.schedule_update)
@@ -636,13 +635,6 @@ class App:
         self.curv_dir_combo.bind("<<ComboboxSelected>>", self.schedule_update)
 
         row += 1
-        self.keep_developed_check = ttk.Checkbutton(
-            trans,
-            text="Mantieni corda sviluppata",
-            variable=self.keep_developed_var,
-            command=self.update_preview,
-        )
-        self.keep_developed_check.grid(row=row, column=0, columnspan=2, sticky="w", pady=2)
         ttk.Label(trans, text="Rotazione [°]").grid(row=row, column=2, sticky="w", padx=(8, 4), pady=2)
         e = ttk.Entry(trans, textvariable=self.angle_var, width=10)
         e.grid(row=row, column=3, sticky="ew", pady=2)
@@ -690,26 +682,22 @@ class App:
         )
         self.fluid_combo.grid(row=arow, column=1, sticky="ew", pady=2)
         self.fluid_combo.bind("<<ComboboxSelected>>", self.on_fluid_changed)
-        ttk.Label(aero, text="Velocità [m/s]").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
+        ttk.Label(aero, text="Velocità [km/h]").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
         e = ttk.Entry(aero, textvariable=self.velocity_var, width=10)
         e.grid(row=arow, column=3, sticky="ew", pady=2)
         e.bind("<KeyRelease>", self.schedule_update)
 
         arow += 1
-        ttk.Label(aero, text="Corda aero [m]").grid(row=arow, column=0, sticky="w", padx=(0, 4), pady=2)
+        ttk.Label(aero, text="Corda aero [mm]").grid(row=arow, column=0, sticky="w", padx=(0, 4), pady=2)
         e = ttk.Entry(aero, textvariable=self.aero_chord_var, width=10)
         e.grid(row=arow, column=1, sticky="ew", pady=2)
         e.bind("<KeyRelease>", self.schedule_update)
-        ttk.Label(aero, text="Span [m]").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
+        ttk.Label(aero, text="Span [mm]").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
         e = ttk.Entry(aero, textvariable=self.span_var, width=10)
         e.grid(row=arow, column=3, sticky="ew", pady=2)
         e.bind("<KeyRelease>", self.schedule_update)
 
         arow += 1
-        ttk.Label(aero, text="Area opz. [m²]").grid(row=arow, column=0, sticky="w", padx=(0, 4), pady=2)
-        e = ttk.Entry(aero, textvariable=self.area_var, width=10)
-        e.grid(row=arow, column=1, sticky="ew", pady=2)
-        e.bind("<KeyRelease>", self.schedule_update)
         ttk.Label(aero, text="Angolo α [°]").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
         e = ttk.Entry(aero, textvariable=self.alpha_attack_var, width=10)
         e.grid(row=arow, column=3, sticky="ew", pady=2)
@@ -758,10 +746,10 @@ class App:
         ttk.Label(aero, text="CD").grid(row=arow, column=0, sticky="w", pady=1)
         ttk.Label(aero, textvariable=self.cd_out_var).grid(row=arow, column=1, sticky="w", pady=1)
         arow += 1
-        ttk.Label(aero, text="Lift [N]").grid(row=arow, column=0, sticky="w", pady=1)
+        ttk.Label(aero, text="Lift [kg]").grid(row=arow, column=0, sticky="w", pady=1)
         ttk.Label(aero, textvariable=self.lift_out_var).grid(row=arow, column=1, sticky="w", pady=1)
         arow += 1
-        ttk.Label(aero, text="Drag [N]").grid(row=arow, column=0, sticky="w", pady=1)
+        ttk.Label(aero, text="Drag [kg]").grid(row=arow, column=0, sticky="w", pady=1)
         ttk.Label(aero, textvariable=self.drag_out_var).grid(row=arow, column=1, sticky="w", pady=1)
         arow += 1
         ttk.Label(aero, text="L/D").grid(row=arow, column=0, sticky="w", pady=1)
@@ -776,17 +764,15 @@ class App:
         ttk.Button(actions, text="Salva .dxf", command=self.save_dxf).grid(row=1, column=0, sticky="ew", padx=(0, 4), pady=2)
         ttk.Button(actions, text="Copia anteprima", command=self.copy_preview).grid(row=1, column=1, sticky="ew", pady=2)
 
-        note = ttk.LabelFrame(left, text="Formato output", padding=8)
+        note = ttk.LabelFrame(left, text="Istruzioni operative", padding=8)
         note.pack(fill="x", pady=(6, 0))
         ttk.Label(
             note,
             text=(
-                "- .pts: x TAB y TAB z\n"
-                "- z sempre = 0\n"
-                "- profilo sempre chiuso\n"
-                "- trailing edge sempre chiuso\n"
-                "- ordine: TE estradosso -> LE -> TE intradosso\n"
-                "- .dxf: polilinea 2D chiusa su layer AIRFOIL"
+                "1) Inserisci NACA e parametri principali.\n"
+                "2) Controlla grafico live e valori aero.\n"
+                "3) Salva .pts o .dxf dai pulsanti Actions.\n"
+                "4) Usa 'Copia anteprima' per esportare rapido."
             ),
             justify="left",
         ).pack(anchor="w")
@@ -806,7 +792,7 @@ class App:
 
         summary = ttk.Frame(preview_frame)
         summary.pack(fill="x", pady=(0, 4))
-        summary_labels = [("Re [-]", self.reynolds_out_var), ("CL [-]", self.cl_out_var), ("CD [-]", self.cd_out_var), ("Lift [N]", self.lift_out_var), ("Drag [N]", self.drag_out_var), ("L/D [-]", self.ld_out_var)]
+        summary_labels = [("Re [-]", self.reynolds_out_var), ("CL [-]", self.cl_out_var), ("CD [-]", self.cd_out_var), ("Lift [kg]", self.lift_out_var), ("Drag [kg]", self.drag_out_var), ("L/D [-]", self.ld_out_var)]
         for idx, (lbl, var) in enumerate(summary_labels):
             col = idx * 2
             summary.columnconfigure(col + 1, weight=1)
@@ -820,7 +806,7 @@ class App:
             text_row,
             wrap="none",
             font=("Consolas", 9),
-            height=8,
+            height=5,
             bg=self.colors["entry"],
             fg=self.colors["text"],
             insertbackground=self.colors["text"],
@@ -860,7 +846,7 @@ class App:
 
         self.radius_entry.config(state=state)
         self.curv_dir_combo.config(state=readonly_state)
-        self.keep_developed_check.config(state=state)
+        self.keep_developed_var.set(True)
 
     def on_fluid_changed(self, event=None):
         fluid = self.fluid_var.get().strip().lower()
@@ -891,9 +877,12 @@ class App:
     def compute_aero_results(self, vals):
         code = vals["code"]
         alpha = float(self.alpha_attack_var.get().replace(",", "."))
-        velocity = float(self.velocity_var.get().replace(",", "."))
-        chord = float(self.aero_chord_var.get().replace(",", "."))
-        span = float(self.span_var.get().replace(",", "."))
+        velocity_kmh = float(self.velocity_var.get().replace(",", "."))
+        chord_mm = float(self.aero_chord_var.get().replace(",", "."))
+        span_mm = float(self.span_var.get().replace(",", "."))
+        velocity = velocity_kmh / 3.6
+        chord = chord_mm / 1000.0
+        span = span_mm / 1000.0
 
         fluid = self.fluid_var.get().strip().lower()
         if fluid in FLUID_PRESETS:
@@ -903,8 +892,7 @@ class App:
             density = float(self.density_var.get().replace(",", "."))
             viscosity = float(self.viscosity_var.get().replace(",", "."))
 
-        area_override = self._parse_optional_float(self.area_var.get())
-        area = area_override if area_override is not None else chord * span
+        area = chord * span
         if velocity <= 0:
             raise ValueError("La velocità deve essere maggiore di zero.")
         if span <= 0:
@@ -940,14 +928,17 @@ class App:
         self.reynolds_out_var.set(f"{aero['reynolds']:.3e}")
         self.cl_out_var.set(f"{aero['cl']:.4f}")
         self.cd_out_var.set(f"{aero['cd']:.4f}")
-        self.lift_out_var.set(f"{aero['lift']:.3f}")
-        self.drag_out_var.set(f"{aero['drag']:.3f}")
+        lift_kg = aero["lift"] / 9.80665
+        drag_kg = aero["drag"] / 9.80665
+        self.lift_out_var.set(f"{lift_kg:.3f}")
+        self.drag_out_var.set(f"{drag_kg:.3f}")
         self.ld_out_var.set(f"{aero['ld_ratio']:.3f}")
 
     def get_values(self):
         mode = self.mode_internal_value()
         code = self.code_var.get().strip()
-        chord = float(self.chord_var.get().replace(",", "."))
+        chord_mm = float(self.chord_var.get().replace(",", "."))
+        chord = chord_mm / 1000.0
         n_side = int(self.n_side_var.get())
         angle_deg = float(self.angle_var.get().replace(",", "."))
         decimals = int(self.decimals_var.get())
@@ -963,7 +954,8 @@ class App:
 
         radius = None
         if mode == "curved":
-            radius = float(self.radius_var.get().replace(",", "."))
+            radius_mm = float(self.radius_var.get().replace(",", "."))
+            radius = radius_mm / 1000.0
             if radius <= 0:
                 raise ValueError("Il raggio di curvatura deve essere maggiore di zero.")
 
@@ -978,7 +970,7 @@ class App:
             "n_side": n_side,
             "radius": radius,
             "curvature_dir": curvature_dir,
-            "keep_developed_chord": self.keep_developed_var.get(),
+            "keep_developed_chord": True,
             "angle_deg": angle_deg,
             "decimals": decimals,
             "mirror_x": self.mirror_x_var.get(),
@@ -1014,18 +1006,20 @@ class App:
     def redraw_plot(self, x, y, vals):
         self.ax.clear()
         self.ax.set_facecolor(self.colors["plot_bg"])
-        self.ax.plot(x, y, marker=".", markersize=2, linewidth=1.0)
+        x_mm = np.array(x) * 1000.0
+        y_mm = np.array(y) * 1000.0
+        self.ax.plot(x_mm, y_mm, marker=".", markersize=2, linewidth=1.0)
 
         mode_txt = "Profilo piano" if vals["mode"] == "flat" else "Profilo curvato"
-        title = f"NACA {vals['code']} | corda={vals['chord']} m | {mode_txt}"
+        title = f"NACA {vals['code']} | corda={vals['chord'] * 1000:.1f} mm | {mode_txt}"
         if vals["mode"] == "curved":
-            title += f" | R={vals['radius']} m"
+            title += f" | R={vals['radius'] * 1000:.1f} mm"
         if vals["angle_deg"]:
             title += f" | rot={vals['angle_deg']}°"
 
         self.ax.set_title(title)
-        self.ax.set_xlabel("X [m]")
-        self.ax.set_ylabel("Y [m]")
+        self.ax.set_xlabel("X [mm]")
+        self.ax.set_ylabel("Y [mm]")
         self.ax.grid(True, color=self.colors["grid"], alpha=0.5)
         self.ax.set_aspect("equal", adjustable="box")
         self.ax.tick_params(colors=self.colors["fg"])
@@ -1035,12 +1029,12 @@ class App:
         for spine in self.ax.spines.values():
             spine.set_color(self.colors["muted"])
 
-        if len(x) > 0:
-            xmin, xmax = float(np.min(x)), float(np.max(x))
-            ymin, ymax = float(np.min(y)), float(np.max(y))
+        if len(x_mm) > 0:
+            xmin, xmax = float(np.min(x_mm)), float(np.max(x_mm))
+            ymin, ymax = float(np.min(y_mm)), float(np.max(y_mm))
             dx = xmax - xmin
             dy = ymax - ymin
-            base = max(vals["chord"] * 0.02, 1e-6)
+            base = max(vals["chord"] * 1000.0 * 0.02, 1e-6)
             pad_x = max(dx * 0.08, base)
             pad_y = max(dy * 0.12, base)
             self.ax.set_xlim(xmin - pad_x, xmax + pad_x)
