@@ -9,6 +9,13 @@ Airfoil Tools is a desktop GUI app to generate NACA 4-digit profiles and export 
 
 For most users, use the executable package.
 
+### 0) Clone
+
+```bash
+git clone <repo-url>
+cd airfoil-tools
+```
+
 ### 1) Download
 
 - Download the latest executable package from the project release page (or from the package shared by your team).
@@ -19,6 +26,9 @@ For most users, use the executable package.
 
 - Double-click `airfoil-tools.exe`.
 - The GUI opens and you can immediately generate and export profiles.
+
+Alternative quick start from repository folder:
+- Double-click `airfoil-tools.bat`
 
 ## Python source (optional)
 
