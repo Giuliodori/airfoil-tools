@@ -504,16 +504,16 @@ class App:
 
     def setup_dark_theme(self):
         self.colors = {
-            "bg": "#1a1d24",
-            "panel": "#222733",
-            "panel_alt": "#2a3140",
-            "fg": "#e9edf5",
-            "muted": "#aeb7c7",
-            "accent": "#4f8cff",
-            "entry": "#141923",
-            "text": "#dbe3f4",
-            "plot_bg": "#131823",
-            "grid": "#495266",
+            "bg": "#1a1b1e",
+            "panel": "#22252a",
+            "panel_alt": "#2b3036",
+            "fg": "#e6efe9",
+            "muted": "#9fb3a8",
+            "accent": "#2fa36b",
+            "entry": "#14171b",
+            "text": "#d8e6de",
+            "plot_bg": "#121519",
+            "grid": "#3d4f46",
         }
         self.root.configure(bg=self.colors["bg"])
 
@@ -534,7 +534,7 @@ class App:
         style.configure("TCheckbutton", background=self.colors["panel"], foreground=self.colors["fg"])
         style.map("TCheckbutton", background=[("active", self.colors["panel_alt"])], foreground=[("disabled", self.colors["muted"])])
         style.configure("TButton", background=self.colors["panel_alt"], foreground=self.colors["fg"], borderwidth=1, focuscolor=self.colors["accent"], padding=(6, 3))
-        style.map("TButton", background=[("active", self.colors["accent"]), ("pressed", "#3f76d6")], foreground=[("active", "#ffffff")])
+        style.map("TButton", background=[("active", self.colors["accent"]), ("pressed", "#247d53")], foreground=[("active", "#ffffff")])
 
     def build_compact_layout(self):
         main = ttk.Frame(self.root, padding=8)
@@ -605,7 +605,7 @@ class App:
         self.mode_combo = mode_combo
 
         row += 1
-        ttk.Label(geom, text="Corda").grid(row=row, column=0, sticky="w", padx=(0, 4), pady=2)
+        ttk.Label(geom, text="Corda [m]").grid(row=row, column=0, sticky="w", padx=(0, 4), pady=2)
         e = ttk.Entry(geom, textvariable=self.chord_var, width=10)
         e.grid(row=row, column=1, sticky="ew", pady=2)
         e.bind("<KeyRelease>", self.schedule_update)
@@ -620,7 +620,7 @@ class App:
         trans.columnconfigure(3, weight=1)
 
         row = 0
-        ttk.Label(trans, text="Raggio").grid(row=row, column=0, sticky="w", padx=(0, 4), pady=2)
+        ttk.Label(trans, text="Raggio [m]").grid(row=row, column=0, sticky="w", padx=(0, 4), pady=2)
         self.radius_entry = ttk.Entry(trans, textvariable=self.radius_var, width=10)
         self.radius_entry.grid(row=row, column=1, sticky="ew", pady=2)
         self.radius_entry.bind("<KeyRelease>", self.schedule_update)
@@ -643,7 +643,7 @@ class App:
             command=self.update_preview,
         )
         self.keep_developed_check.grid(row=row, column=0, columnspan=2, sticky="w", pady=2)
-        ttk.Label(trans, text="Rotazione°").grid(row=row, column=2, sticky="w", padx=(8, 4), pady=2)
+        ttk.Label(trans, text="Rotazione [°]").grid(row=row, column=2, sticky="w", padx=(8, 4), pady=2)
         e = ttk.Entry(trans, textvariable=self.angle_var, width=10)
         e.grid(row=row, column=3, sticky="ew", pady=2)
         e.bind("<KeyRelease>", self.schedule_update)
@@ -690,37 +690,37 @@ class App:
         )
         self.fluid_combo.grid(row=arow, column=1, sticky="ew", pady=2)
         self.fluid_combo.bind("<<ComboboxSelected>>", self.on_fluid_changed)
-        ttk.Label(aero, text="Velocità").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
+        ttk.Label(aero, text="Velocità [m/s]").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
         e = ttk.Entry(aero, textvariable=self.velocity_var, width=10)
         e.grid(row=arow, column=3, sticky="ew", pady=2)
         e.bind("<KeyRelease>", self.schedule_update)
 
         arow += 1
-        ttk.Label(aero, text="Corda aero").grid(row=arow, column=0, sticky="w", padx=(0, 4), pady=2)
+        ttk.Label(aero, text="Corda aero [m]").grid(row=arow, column=0, sticky="w", padx=(0, 4), pady=2)
         e = ttk.Entry(aero, textvariable=self.aero_chord_var, width=10)
         e.grid(row=arow, column=1, sticky="ew", pady=2)
         e.bind("<KeyRelease>", self.schedule_update)
-        ttk.Label(aero, text="Span").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
+        ttk.Label(aero, text="Span [m]").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
         e = ttk.Entry(aero, textvariable=self.span_var, width=10)
         e.grid(row=arow, column=3, sticky="ew", pady=2)
         e.bind("<KeyRelease>", self.schedule_update)
 
         arow += 1
-        ttk.Label(aero, text="Area opz.").grid(row=arow, column=0, sticky="w", padx=(0, 4), pady=2)
+        ttk.Label(aero, text="Area opz. [m²]").grid(row=arow, column=0, sticky="w", padx=(0, 4), pady=2)
         e = ttk.Entry(aero, textvariable=self.area_var, width=10)
         e.grid(row=arow, column=1, sticky="ew", pady=2)
         e.bind("<KeyRelease>", self.schedule_update)
-        ttk.Label(aero, text="Angolo α°").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
+        ttk.Label(aero, text="Angolo α [°]").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
         e = ttk.Entry(aero, textvariable=self.alpha_attack_var, width=10)
         e.grid(row=arow, column=3, sticky="ew", pady=2)
         e.bind("<KeyRelease>", self.schedule_update)
 
         arow += 1
-        ttk.Label(aero, text="Densità").grid(row=arow, column=0, sticky="w", padx=(0, 4), pady=2)
+        ttk.Label(aero, text="Densità [kg/m³]").grid(row=arow, column=0, sticky="w", padx=(0, 4), pady=2)
         self.density_entry = ttk.Entry(aero, textvariable=self.density_var, width=10)
         self.density_entry.grid(row=arow, column=1, sticky="ew", pady=2)
         self.density_entry.bind("<KeyRelease>", self.schedule_update)
-        ttk.Label(aero, text="Viscosità").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
+        ttk.Label(aero, text="Viscosità [Pa·s]").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
         self.viscosity_entry = ttk.Entry(aero, textvariable=self.viscosity_var, width=10)
         self.viscosity_entry.grid(row=arow, column=3, sticky="ew", pady=2)
         self.viscosity_entry.bind("<KeyRelease>", self.schedule_update)
@@ -749,7 +749,7 @@ class App:
         ttk.Separator(aero, orient="horizontal").grid(row=arow, column=0, columnspan=4, sticky="ew", pady=3)
 
         arow += 1
-        ttk.Label(aero, text="Reynolds").grid(row=arow, column=0, sticky="w", pady=1)
+        ttk.Label(aero, text="Reynolds [-]").grid(row=arow, column=0, sticky="w", pady=1)
         ttk.Label(aero, textvariable=self.reynolds_out_var).grid(row=arow, column=1, sticky="w", pady=1)
         arow += 1
         ttk.Label(aero, text="CL").grid(row=arow, column=0, sticky="w", pady=1)
@@ -758,10 +758,10 @@ class App:
         ttk.Label(aero, text="CD").grid(row=arow, column=0, sticky="w", pady=1)
         ttk.Label(aero, textvariable=self.cd_out_var).grid(row=arow, column=1, sticky="w", pady=1)
         arow += 1
-        ttk.Label(aero, text="Lift").grid(row=arow, column=0, sticky="w", pady=1)
+        ttk.Label(aero, text="Lift [N]").grid(row=arow, column=0, sticky="w", pady=1)
         ttk.Label(aero, textvariable=self.lift_out_var).grid(row=arow, column=1, sticky="w", pady=1)
         arow += 1
-        ttk.Label(aero, text="Drag").grid(row=arow, column=0, sticky="w", pady=1)
+        ttk.Label(aero, text="Drag [N]").grid(row=arow, column=0, sticky="w", pady=1)
         ttk.Label(aero, textvariable=self.drag_out_var).grid(row=arow, column=1, sticky="w", pady=1)
         arow += 1
         ttk.Label(aero, text="L/D").grid(row=arow, column=0, sticky="w", pady=1)
@@ -806,7 +806,7 @@ class App:
 
         summary = ttk.Frame(preview_frame)
         summary.pack(fill="x", pady=(0, 4))
-        summary_labels = [("Re", self.reynolds_out_var), ("CL", self.cl_out_var), ("CD", self.cd_out_var), ("Lift", self.lift_out_var), ("Drag", self.drag_out_var), ("L/D", self.ld_out_var)]
+        summary_labels = [("Re [-]", self.reynolds_out_var), ("CL [-]", self.cl_out_var), ("CD [-]", self.cd_out_var), ("Lift [N]", self.lift_out_var), ("Drag [N]", self.drag_out_var), ("L/D [-]", self.ld_out_var)]
         for idx, (lbl, var) in enumerate(summary_labels):
             col = idx * 2
             summary.columnconfigure(col + 1, weight=1)
@@ -1017,15 +1017,15 @@ class App:
         self.ax.plot(x, y, marker=".", markersize=2, linewidth=1.0)
 
         mode_txt = "Profilo piano" if vals["mode"] == "flat" else "Profilo curvato"
-        title = f"NACA {vals['code']} | corda={vals['chord']} | {mode_txt}"
+        title = f"NACA {vals['code']} | corda={vals['chord']} m | {mode_txt}"
         if vals["mode"] == "curved":
-            title += f" | R={vals['radius']}"
+            title += f" | R={vals['radius']} m"
         if vals["angle_deg"]:
             title += f" | rot={vals['angle_deg']}°"
 
         self.ax.set_title(title)
-        self.ax.set_xlabel("X")
-        self.ax.set_ylabel("Y")
+        self.ax.set_xlabel("X [m]")
+        self.ax.set_ylabel("Y [m]")
         self.ax.grid(True, color=self.colors["grid"], alpha=0.5)
         self.ax.set_aspect("equal", adjustable="box")
         self.ax.tick_params(colors=self.colors["fg"])

@@ -12,7 +12,9 @@ Or from terminal:
 python airfoil_tools.py
 ```
 
-For backward compatibility, legacy launchers `nac4_pts.bat` and `naca4_pts.py` are still available but deprecated.
+Use only the canonical launchers:
+- `airfoil-tools.bat` on Windows
+- `python airfoil_tools.py` from terminal
 
 ## License
 
