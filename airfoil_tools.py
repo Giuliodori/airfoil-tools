@@ -557,11 +557,17 @@ class App:
         if not os.path.exists(logo_path):
             return
         try:
-            self.logo_image = tk.PhotoImage(file=logo_path)
+            logo_image = tk.PhotoImage(file=logo_path)
         except Exception:
             self.logo_image = None
             return
 
+        target_width = 180
+        if logo_image.width() > target_width:
+            downsample = max(1, math.ceil(logo_image.width() / target_width))
+            logo_image = logo_image.subsample(downsample, downsample)
+
+        self.logo_image = logo_image
         logo_box = ttk.Frame(parent)
         logo_box.pack(fill="x", pady=(0, 6))
         ttk.Label(logo_box, image=self.logo_image).pack(anchor="w")
