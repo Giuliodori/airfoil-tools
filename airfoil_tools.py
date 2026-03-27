@@ -836,18 +836,11 @@ class App:
         ttk.Label(aero, text="L/D").grid(row=arow, column=0, sticky="w", pady=1)
         ttk.Label(aero, textvariable=self.ld_out_var).grid(row=arow, column=1, sticky="w", pady=1)
 
-        logo_path = ""
-        for candidate in (
-            os.path.join("images", "logo_airfoil_tools_clean.png"),
-            os.path.join("images", "logo_airfoil_tools.png"),
-        ):
-            if os.path.exists(candidate):
-                logo_path = candidate
-                break
-        if logo_path:
+        logo_path = os.path.join("images", "logo_airfoil_tools_clean.png")
+        if os.path.exists(logo_path):
             try:
                 logo_image = tk.PhotoImage(file=logo_path)
-                target_width = 112
+                target_width = 132
                 if logo_image.width() > target_width:
                     downsample = max(1, math.ceil(logo_image.width() / target_width))
                     logo_image = logo_image.subsample(downsample, downsample)
