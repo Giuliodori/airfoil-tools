@@ -516,17 +516,17 @@ class App:
 
     def setup_dark_theme(self):
         self.colors = {
-            "bg": "#070b12",
-            "panel": "#0e1726",
-            "panel_alt": "#17253a",
-            "fg": "#e6edf8",
-            "muted": "#92a4bf",
-            "accent": "#30d5f3",
-            "accent_alt": "#5ea2ff",
-            "entry": "#101a2b",
-            "text": "#f5f9ff",
-            "plot_bg": "#091323",
-            "grid": "#28466e",
+            "bg": "#f2f4f8",
+            "panel": "#ffffff",
+            "panel_alt": "#e7ecf5",
+            "fg": "#1f2a3a",
+            "muted": "#6e7f95",
+            "accent": "#1f7ae0",
+            "accent_alt": "#1962b4",
+            "entry": "#ffffff",
+            "text": "#1f2a3a",
+            "plot_bg": "#ffffff",
+            "grid": "#cfd8e6",
         }
         self.root.configure(bg=self.colors["bg"])
 
@@ -547,7 +547,10 @@ class App:
         style.configure("TCheckbutton", background=self.colors["panel"], foreground=self.colors["fg"])
         style.map("TCheckbutton", background=[("active", self.colors["panel_alt"])], foreground=[("disabled", self.colors["muted"])])
         style.configure("TButton", background=self.colors["panel_alt"], foreground=self.colors["fg"], borderwidth=1, focuscolor=self.colors["accent"], padding=(8, 5))
-        style.map("TButton", background=[("active", self.colors["accent"]), ("pressed", self.colors["accent_alt"])], foreground=[("active", "#07111f")])
+        style.map("TButton", background=[("active", self.colors["accent"]), ("pressed", self.colors["accent_alt"])], foreground=[("active", "#ffffff")])
+        style.configure("KPIValue.TLabel", background=self.colors["panel"], foreground=self.colors["accent"], font=("Segoe UI", 18, "bold"))
+        style.configure("KPIValueAlt.TLabel", background=self.colors["panel"], foreground=self.colors["accent_alt"], font=("Segoe UI", 18, "bold"))
+        style.configure("Footer.TLabel", background=self.colors["bg"], foreground=self.colors["muted"], font=("Segoe UI", 8))
 
     def build_logo_header(self, parent):
         logo_path = os.path.join("images", "logo_airfoil_tools.png")
@@ -564,8 +567,31 @@ class App:
         ttk.Label(logo_box, image=self.logo_image).pack(anchor="w")
 
     def build_compact_layout(self):
-        main = ttk.Frame(self.root, padding=8)
-        main.pack(fill="both", expand=True)
+        shell = ttk.Frame(self.root, padding=0)
+        shell.pack(fill="both", expand=True)
+
+        self.page_canvas = tk.Canvas(
+            shell,
+            bg=self.colors["bg"],
+            highlightthickness=0,
+            borderwidth=0,
+        )
+        page_scroll = ttk.Scrollbar(shell, orient="vertical", command=self.page_canvas.yview)
+        self.page_canvas.configure(yscrollcommand=page_scroll.set)
+        self.page_canvas.pack(side="left", fill="both", expand=True)
+        page_scroll.pack(side="right", fill="y")
+
+        main = ttk.Frame(self.page_canvas, padding=8)
+        self.page_canvas_window = self.page_canvas.create_window((0, 0), window=main, anchor="nw")
+
+        def _update_scrollregion(event=None):
+            self.page_canvas.configure(scrollregion=self.page_canvas.bbox("all"))
+
+        def _update_width(event):
+            self.page_canvas.itemconfigure(self.page_canvas_window, width=event.width)
+
+        main.bind("<Configure>", _update_scrollregion)
+        self.page_canvas.bind("<Configure>", _update_width)
 
         left = ttk.Frame(main)
         left.pack(side="left", fill="y", padx=(0, 8))
@@ -575,11 +601,11 @@ class App:
 
         self.build_logo_header(left)
 
-        self.code_var = tk.StringVar(value="0030")
-        self.chord_var = tk.StringVar(value="1000")
+        self.code_var = tk.StringVar(value="2412")
+        self.chord_var = tk.StringVar(value="100")
         self.n_side_var = tk.StringVar(value="100")
         self.mode_var = tk.StringVar(value="Flat profile")
-        self.radius_var = tk.StringVar(value="5000")
+        self.radius_var = tk.StringVar(value="100")
         self.curvature_dir_var = tk.StringVar(value="convex")
         self.keep_developed_var = tk.BooleanVar(value=True)
         self.angle_var = tk.StringVar(value="0")
@@ -587,13 +613,13 @@ class App:
         self.mirror_x_var = tk.BooleanVar(value=False)
         self.mirror_y_var = tk.BooleanVar(value=False)
         self.use_internal_aero_var = tk.BooleanVar(value=True)
-        self.fluid_var = tk.StringVar(value="air")
-        self.velocity_var = tk.StringVar(value="72.0")
-        self.aero_chord_var = tk.StringVar(value="1000")
-        self.span_var = tk.StringVar(value="1000")
+        self.fluid_var = tk.StringVar(value="water")
+        self.velocity_var = tk.StringVar(value="50")
+        self.aero_chord_var = tk.StringVar(value="100")
+        self.span_var = tk.StringVar(value="200")
         self.alpha_attack_var = tk.StringVar(value="0.0")
-        self.density_var = tk.StringVar(value=str(FLUID_PRESETS["air"]["rho"]))
-        self.viscosity_var = tk.StringVar(value=str(FLUID_PRESETS["air"]["mu"]))
+        self.density_var = tk.StringVar(value=str(FLUID_PRESETS["water"]["rho"]))
+        self.viscosity_var = tk.StringVar(value=str(FLUID_PRESETS["water"]["mu"]))
         self.override_cd0_var = tk.StringVar(value="")
         self.override_k_drag_var = tk.StringVar(value="")
         self.override_cl_max_var = tk.StringVar(value="")
@@ -820,14 +846,10 @@ class App:
         kpi_frame.pack(fill="x", expand=False, pady=(8, 0))
         kpi_frame.columnconfigure(1, weight=1)
         kpi_frame.columnconfigure(3, weight=1)
-        kpi_frame.columnconfigure(5, weight=1)
-
         ttk.Label(kpi_frame, text="Lift [kg]").grid(row=0, column=0, sticky="w")
-        ttk.Label(kpi_frame, textvariable=self.lift_out_var, foreground=self.colors["accent"]).grid(row=0, column=1, sticky="w", padx=(4, 12))
+        ttk.Label(kpi_frame, textvariable=self.lift_out_var, style="KPIValue.TLabel").grid(row=0, column=1, sticky="w", padx=(4, 12))
         ttk.Label(kpi_frame, text="Drag [kg]").grid(row=0, column=2, sticky="w")
-        ttk.Label(kpi_frame, textvariable=self.drag_out_var, foreground=self.colors["accent_alt"]).grid(row=0, column=3, sticky="w", padx=(4, 12))
-        ttk.Label(kpi_frame, text="L/D [-]").grid(row=0, column=4, sticky="w")
-        ttk.Label(kpi_frame, textvariable=self.ld_out_var).grid(row=0, column=5, sticky="w", padx=(4, 0))
+        ttk.Label(kpi_frame, textvariable=self.drag_out_var, style="KPIValueAlt.TLabel").grid(row=0, column=3, sticky="w", padx=(4, 0))
 
         preview_frame = ttk.LabelFrame(right, text=".pts preview", padding=6)
         preview_frame.pack(fill="x", expand=False, pady=(8, 0))
@@ -863,6 +885,9 @@ class App:
         xscroll = ttk.Scrollbar(preview_frame, orient="horizontal", command=self.text.xview)
         xscroll.pack(fill="x", pady=(2, 0))
         self.text.configure(xscrollcommand=xscroll.set, yscrollcommand=yscroll.set)
+
+        footer = ttk.Label(right, text="© Fabio Giuliodori", style="Footer.TLabel")
+        footer.pack(anchor="e", pady=(8, 0))
 
     def configure_plot_theme(self):
         self.figure.patch.set_facecolor(self.colors["plot_bg"])
