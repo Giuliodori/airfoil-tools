@@ -1,6 +1,19 @@
 # airfoil-tools
 Airfoil design and generation tools with NACA4 support, curved profiles, and export to PTS and DXF.
 
+## Running the application
+
+On Windows:
+- Double-click `airfoil-tools.bat`
+
+Or from terminal:
+
+```bash
+python airfoil_tools.py
+```
+
+For backward compatibility, legacy launchers `nac4_pts.bat` and `naca4_pts.py` are still available but deprecated.
+
 ## License
 
 This project is dual-licensed:
