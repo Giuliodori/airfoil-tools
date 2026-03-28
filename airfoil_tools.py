@@ -9,6 +9,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 import numpy as np
+from airfoil_library import get_airfoil_parameters
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
@@ -19,57 +20,6 @@ FLUID_PRESETS = {
 }
 
 
-AIRFOIL_DB = {
-    "0008": {
-        "re_buckets": [
-            {"re_min": 0, "re_max": 2.0e5, "cl_alpha_per_deg": 0.095, "alpha_zero_lift_deg": 0.0, "cl_max": 0.95, "cd0_base": 0.0170, "k_drag": 0.0150, "alpha_stall_deg": 9.0},
-            {"re_min": 2.0e5, "re_max": 1.0e6, "cl_alpha_per_deg": 0.098, "alpha_zero_lift_deg": 0.0, "cl_max": 1.08, "cd0_base": 0.0140, "k_drag": 0.0130, "alpha_stall_deg": 11.0},
-            {"re_min": 1.0e6, "re_max": float("inf"), "cl_alpha_per_deg": 0.100, "alpha_zero_lift_deg": 0.0, "cl_max": 1.16, "cd0_base": 0.0120, "k_drag": 0.0120, "alpha_stall_deg": 12.0},
-        ]
-    },
-    "0012": {
-        "re_buckets": [
-            {"re_min": 0, "re_max": 2.0e5, "cl_alpha_per_deg": 0.097, "alpha_zero_lift_deg": 0.0, "cl_max": 1.00, "cd0_base": 0.0200, "k_drag": 0.0160, "alpha_stall_deg": 10.0},
-            {"re_min": 2.0e5, "re_max": 1.0e6, "cl_alpha_per_deg": 0.101, "alpha_zero_lift_deg": 0.0, "cl_max": 1.25, "cd0_base": 0.0150, "k_drag": 0.0140, "alpha_stall_deg": 13.0},
-            {"re_min": 1.0e6, "re_max": float("inf"), "cl_alpha_per_deg": 0.104, "alpha_zero_lift_deg": 0.0, "cl_max": 1.38, "cd0_base": 0.0125, "k_drag": 0.0130, "alpha_stall_deg": 15.0},
-        ]
-    },
-    "0015": {
-        "re_buckets": [
-            {"re_min": 0, "re_max": 2.0e5, "cl_alpha_per_deg": 0.095, "alpha_zero_lift_deg": 0.0, "cl_max": 1.00, "cd0_base": 0.0210, "k_drag": 0.0175, "alpha_stall_deg": 10.0},
-            {"re_min": 2.0e5, "re_max": 1.0e6, "cl_alpha_per_deg": 0.100, "alpha_zero_lift_deg": 0.0, "cl_max": 1.25, "cd0_base": 0.0165, "k_drag": 0.0150, "alpha_stall_deg": 13.0},
-            {"re_min": 1.0e6, "re_max": float("inf"), "cl_alpha_per_deg": 0.103, "alpha_zero_lift_deg": 0.0, "cl_max": 1.38, "cd0_base": 0.0140, "k_drag": 0.0140, "alpha_stall_deg": 15.0},
-        ]
-    },
-    "0020": {
-        "re_buckets": [
-            {"re_min": 0, "re_max": 2.0e5, "cl_alpha_per_deg": 0.093, "alpha_zero_lift_deg": 0.0, "cl_max": 0.95, "cd0_base": 0.0240, "k_drag": 0.0190, "alpha_stall_deg": 9.0},
-            {"re_min": 2.0e5, "re_max": 1.0e6, "cl_alpha_per_deg": 0.098, "alpha_zero_lift_deg": 0.0, "cl_max": 1.18, "cd0_base": 0.0190, "k_drag": 0.0170, "alpha_stall_deg": 12.0},
-            {"re_min": 1.0e6, "re_max": float("inf"), "cl_alpha_per_deg": 0.101, "alpha_zero_lift_deg": 0.0, "cl_max": 1.30, "cd0_base": 0.0160, "k_drag": 0.0160, "alpha_stall_deg": 14.0},
-        ]
-    },
-    "2412": {
-        "re_buckets": [
-            {"re_min": 0, "re_max": 2.0e5, "cl_alpha_per_deg": 0.095, "alpha_zero_lift_deg": -1.8, "cl_max": 1.10, "cd0_base": 0.0170, "k_drag": 0.0160, "alpha_stall_deg": 11.0},
-            {"re_min": 2.0e5, "re_max": 1.0e6, "cl_alpha_per_deg": 0.100, "alpha_zero_lift_deg": -2.0, "cl_max": 1.35, "cd0_base": 0.0135, "k_drag": 0.0140, "alpha_stall_deg": 14.0},
-            {"re_min": 1.0e6, "re_max": float("inf"), "cl_alpha_per_deg": 0.103, "alpha_zero_lift_deg": -2.2, "cl_max": 1.50, "cd0_base": 0.0115, "k_drag": 0.0130, "alpha_stall_deg": 16.0},
-        ]
-    },
-    "4412": {
-        "re_buckets": [
-            {"re_min": 0, "re_max": 2.0e5, "cl_alpha_per_deg": 0.094, "alpha_zero_lift_deg": -3.0, "cl_max": 1.15, "cd0_base": 0.0185, "k_drag": 0.0170, "alpha_stall_deg": 10.0},
-            {"re_min": 2.0e5, "re_max": 1.0e6, "cl_alpha_per_deg": 0.099, "alpha_zero_lift_deg": -3.2, "cl_max": 1.45, "cd0_base": 0.0145, "k_drag": 0.0150, "alpha_stall_deg": 13.0},
-            {"re_min": 1.0e6, "re_max": float("inf"), "cl_alpha_per_deg": 0.102, "alpha_zero_lift_deg": -3.4, "cl_max": 1.60, "cd0_base": 0.0125, "k_drag": 0.0140, "alpha_stall_deg": 15.0},
-        ]
-    },
-    "4415": {
-        "re_buckets": [
-            {"re_min": 0, "re_max": 2.0e5, "cl_alpha_per_deg": 0.093, "alpha_zero_lift_deg": -3.0, "cl_max": 1.10, "cd0_base": 0.0200, "k_drag": 0.0180, "alpha_stall_deg": 10.0},
-            {"re_min": 2.0e5, "re_max": 1.0e6, "cl_alpha_per_deg": 0.098, "alpha_zero_lift_deg": -3.2, "cl_max": 1.40, "cd0_base": 0.0160, "k_drag": 0.0160, "alpha_stall_deg": 13.0},
-            {"re_min": 1.0e6, "re_max": float("inf"), "cl_alpha_per_deg": 0.101, "alpha_zero_lift_deg": -3.4, "cl_max": 1.55, "cd0_base": 0.0135, "k_drag": 0.0150, "alpha_stall_deg": 15.0},
-        ]
-    },
-}
 
 
 def parse_naca4_code(code: str):
@@ -80,75 +30,6 @@ def parse_naca4_code(code: str):
     p = int(code[1]) / 10.0
     t = int(code[2:4]) / 100.0
     return {"code": code, "m": m, "p": p, "t": t, "is_symmetric": (code[:2] == "00")}
-
-
-def estimate_fallback_airfoil_parameters(code: str, reynolds: float):
-    geom = parse_naca4_code(code)
-    m = geom["m"]
-    p = geom["p"]
-    t = geom["t"]
-
-    re_factor = min(max((math.log10(max(reynolds, 5.0e4)) - 5.0) / 2.0, 0.0), 1.0)
-
-    cl_alpha = 0.094 + 0.010 * (1.0 - abs(t - 0.12) / 0.12)
-    cl_alpha = max(0.088, min(0.106, cl_alpha))
-    cl_alpha += 0.004 * re_factor
-
-    if geom["is_symmetric"]:
-        alpha_zero = 0.0
-    else:
-        camber_pos_term = (0.4 - p) * 0.8 if p > 0 else 0.0
-        alpha_zero = -(85.0 * m) + camber_pos_term
-
-    cl_max = 1.0 + 10.0 * m + 0.25 * re_factor - 2.0 * abs(t - 0.12)
-    cl_max = max(0.9, min(1.8, cl_max))
-
-    cd0_base = 0.012 + 0.040 * (t - 0.10) ** 2 + 0.006 * (1.0 - re_factor) + 0.005 * m
-    cd0_base = max(0.008, min(0.032, cd0_base))
-
-    k_drag = 0.011 + 0.020 * max(t - 0.08, 0.0) + 0.004 * (1.0 - re_factor)
-    k_drag = max(0.010, min(0.028, k_drag))
-
-    alpha_stall = 10.0 + 80.0 * max(t - 0.10, 0.0) + 45.0 * m + 3.0 * re_factor
-    alpha_stall = max(8.0, min(18.0, alpha_stall))
-
-    return {
-        "cl_alpha_per_deg": cl_alpha,
-        "alpha_zero_lift_deg": alpha_zero,
-        "cl_max": cl_max,
-        "cd0_base": cd0_base,
-        "k_drag": k_drag,
-        "alpha_stall_deg": alpha_stall,
-        "source": "fallback",
-    }
-
-
-def get_airfoil_parameters(code: str, reynolds: float, use_internal_library: bool = True, overrides=None):
-    overrides = overrides or {}
-    base = None
-
-    if use_internal_library and code in AIRFOIL_DB:
-        for bucket in AIRFOIL_DB[code]["re_buckets"]:
-            if bucket["re_min"] <= reynolds < bucket["re_max"]:
-                base = dict(bucket)
-                base["source"] = "library"
-                break
-        if base is None:
-            base = dict(AIRFOIL_DB[code]["re_buckets"][-1])
-            base["source"] = "library"
-    else:
-        base = estimate_fallback_airfoil_parameters(code, reynolds)
-
-    if overrides.get("cd0") is not None:
-        base["cd0_base"] = max(0.0001, float(overrides["cd0"]))
-    if overrides.get("k_drag") is not None:
-        base["k_drag"] = max(0.0001, float(overrides["k_drag"]))
-    if overrides.get("cl_max") is not None:
-        base["cl_max"] = max(0.1, float(overrides["cl_max"]))
-    if overrides.get("alpha_zero_lift_deg") is not None:
-        base["alpha_zero_lift_deg"] = float(overrides["alpha_zero_lift_deg"])
-
-    return base
 
 
 def compute_reynolds(velocity: float, chord: float, density: float, viscosity: float):
@@ -362,7 +243,10 @@ def build_curved_airfoil_xy(
 
 
 def transform_points(x, y, angle_deg=0.0, mirror_x=False, mirror_y=False):
-    """Global final mirrors and rotation."""
+    """Global final mirrors and rotation.
+
+    UI convention: positive rotation is clockwise.
+    """
     x = np.array(x, dtype=float)
     y = np.array(y, dtype=float)
 
@@ -373,7 +257,8 @@ def transform_points(x, y, angle_deg=0.0, mirror_x=False, mirror_y=False):
         x = -x
 
     if angle_deg:
-        ang = math.radians(angle_deg)
+        # Convert UI clockwise-positive convention to math CCW-positive rotation.
+        ang = math.radians(-angle_deg)
         c = math.cos(ang)
         s = math.sin(ang)
         xr = x * c - y * s
@@ -494,6 +379,7 @@ class App:
         self.setup_dark_theme()
 
         self._update_job = None
+        self._syncing_code = False
 
         self.build_compact_layout()
 
@@ -618,6 +504,9 @@ class App:
         self.decimals_var = tk.StringVar(value="6")
         self.mirror_x_var = tk.BooleanVar(value=False)
         self.mirror_y_var = tk.BooleanVar(value=False)
+        # Advanced aerodynamic source toggle kept for future UI re-enable.
+        # To restore it, add back the checkbox in the Aerodynamics panel and
+        # switch `use_internal_library=True` in `compute_aero_results()` to this variable.
         self.use_internal_aero_var = tk.BooleanVar(value=True)
         self.fluid_var = tk.StringVar(value="water")
         self.velocity_var = tk.StringVar(value="50")
@@ -636,6 +525,13 @@ class App:
         self.lift_out_var = tk.StringVar(value="-")
         self.drag_out_var = tk.StringVar(value="-")
         self.ld_out_var = tk.StringVar(value="-")
+        self.naca_camber_var = tk.IntVar(value=2)
+        self.naca_pos_var = tk.IntVar(value=4)
+        self.naca_thickness_var = tk.IntVar(value=12)
+        # Expert-mode state is intentionally kept even if the toggle is hidden.
+        # To re-enable advanced controls, restore the Expert checkbox and relax
+        # the row filtering inside `update_expert_visibility()`.
+        self.show_expert_var = tk.BooleanVar(value=False)
 
         geom = ttk.LabelFrame(left, text="Geometry", padding=8)
         geom.pack(fill="x")
@@ -643,10 +539,21 @@ class App:
         geom.columnconfigure(3, weight=1)
 
         row = 0
-        ttk.Label(geom, text="NACA").grid(row=row, column=0, sticky="w", padx=(0, 4), pady=2)
-        e = ttk.Entry(geom, textvariable=self.code_var, width=10)
-        e.grid(row=row, column=1, sticky="ew", pady=2)
-        e.bind("<KeyRelease>", self.schedule_update)
+        ttk.Label(geom, text="NACA profile").grid(row=row, column=0, sticky="w", padx=(0, 4), pady=(2, 0))
+        self.code_entry = tk.Entry(
+            geom,
+            textvariable=self.code_var,
+            width=12,
+            justify="center",
+            font=("Segoe UI", 18, "bold"),
+            bg=self.colors["entry"],
+            fg=self.colors["text"],
+            insertbackground=self.colors["text"],
+            relief="flat",
+            borderwidth=1,
+        )
+        self.code_entry.grid(row=row, column=1, sticky="ew", pady=(2, 0))
+        self.code_entry.bind("<KeyRelease>", self.schedule_update)
         ttk.Label(geom, text="Mode").grid(row=row, column=2, sticky="w", padx=(8, 4), pady=2)
         self.mode_map = {
             "Flat profile": "flat",
@@ -665,6 +572,55 @@ class App:
         self.mode_combo = mode_combo
 
         row += 1
+        ttk.Label(geom, text="camber | camber position | thickness").grid(
+            row=row, column=0, columnspan=4, sticky="w", pady=(0, 4)
+        )
+
+        row += 1
+        slider_specs = (
+            ("Camber", self.naca_camber_var, 0, 9),
+            ("Pos", self.naca_pos_var, 0, 9),
+        )
+        for col, (label, var, min_v, max_v) in enumerate(slider_specs):
+            ttk.Label(geom, text=label).grid(row=row, column=col, sticky="w", pady=(0, 0))
+            scale = tk.Scale(
+                geom,
+                from_=min_v,
+                to=max_v,
+                orient="horizontal",
+                variable=var,
+                showvalue=True,
+                resolution=1,
+                bg=self.colors["panel"],
+                fg=self.colors["fg"],
+                highlightthickness=0,
+                troughcolor=self.colors["entry"],
+                activebackground=self.colors["accent"],
+                length=120,
+                command=self.on_digit_slider_changed,
+            )
+            scale.grid(row=row + 1, column=col, sticky="ew", padx=(0, 4), pady=(0, 4))
+
+        ttk.Label(geom, text="Thickness").grid(row=row, column=2, columnspan=2, sticky="w", pady=(0, 0))
+        self.thickness_scale = tk.Scale(
+            geom,
+            from_=1,
+            to=40,
+            orient="horizontal",
+            variable=self.naca_thickness_var,
+            showvalue=True,
+            resolution=1,
+            bg=self.colors["panel"],
+            fg=self.colors["fg"],
+            highlightthickness=0,
+            troughcolor=self.colors["entry"],
+            activebackground=self.colors["accent"],
+            length=260,
+            command=self.on_digit_slider_changed,
+        )
+        self.thickness_scale.grid(row=row + 1, column=2, columnspan=2, sticky="ew", padx=(0, 4), pady=(0, 4))
+
+        row += 2
         ttk.Label(geom, text="Chord [mm]").grid(row=row, column=0, sticky="w", padx=(0, 4), pady=2)
         e = ttk.Entry(geom, textvariable=self.chord_var, width=10)
         e.grid(row=row, column=1, sticky="ew", pady=2)
@@ -673,6 +629,24 @@ class App:
         e = ttk.Entry(geom, textvariable=self.n_side_var, width=10)
         e.grid(row=row, column=3, sticky="ew", pady=2)
         e.bind("<KeyRelease>", self.schedule_update)
+
+        row += 1
+        self.chord_scale = tk.Scale(
+            geom,
+            from_=10,
+            to=2000,
+            orient="horizontal",
+            variable=self.chord_var,
+            showvalue=False,
+            resolution=1,
+            bg=self.colors["panel"],
+            fg=self.colors["fg"],
+            highlightthickness=0,
+            troughcolor=self.colors["entry"],
+            activebackground=self.colors["accent"],
+            command=lambda _value: self.schedule_update(),
+        )
+        self.chord_scale.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(0, 4))
 
         trans = ttk.LabelFrame(left, text="Curvature / Transform", padding=8)
         trans.pack(fill="x", pady=(6, 0))
@@ -702,6 +676,24 @@ class App:
         e.bind("<KeyRelease>", self.schedule_update)
 
         row += 1
+        self.rotation_scale = tk.Scale(
+            trans,
+            from_=-180,
+            to=180,
+            orient="horizontal",
+            variable=self.angle_var,
+            showvalue=False,
+            resolution=1,
+            bg=self.colors["panel"],
+            fg=self.colors["fg"],
+            highlightthickness=0,
+            troughcolor=self.colors["entry"],
+            activebackground=self.colors["accent"],
+            command=lambda _value: self.schedule_update(),
+        )
+        self.rotation_scale.grid(row=row, column=2, columnspan=2, sticky="ew", pady=(0, 4))
+
+        row += 1
         ttk.Label(trans, text="Decimals").grid(row=row, column=0, sticky="w", padx=(0, 4), pady=2)
         e = ttk.Entry(trans, textvariable=self.decimals_var, width=10)
         e.grid(row=row, column=1, sticky="ew", pady=2)
@@ -723,16 +715,9 @@ class App:
         aero.pack(fill="x", pady=(6, 0))
         aero.columnconfigure(1, weight=1)
         aero.columnconfigure(3, weight=1)
+        self.aero_frame = aero
 
         arow = 0
-        ttk.Checkbutton(
-            aero,
-            text="Use internal NACA library",
-            variable=self.use_internal_aero_var,
-            command=self.update_preview,
-        ).grid(row=arow, column=0, columnspan=4, sticky="w", pady=2)
-
-        arow += 1
         ttk.Label(aero, text="Fluid").grid(row=arow, column=0, sticky="w", padx=(0, 4), pady=2)
         self.fluid_combo = ttk.Combobox(
             aero,
@@ -749,23 +734,58 @@ class App:
         e.bind("<KeyRelease>", self.schedule_update)
 
         arow += 1
+        # Advanced readonly field kept so Geometry can still drive a hidden
+        # aerodynamic chord input. Re-show this row if you want the user to
+        # inspect the linked value directly.
         ttk.Label(aero, text="Aero chord [mm]").grid(row=arow, column=0, sticky="w", padx=(0, 4), pady=2)
-        e = ttk.Entry(aero, textvariable=self.aero_chord_var, width=10)
-        e.grid(row=arow, column=1, sticky="ew", pady=2)
-        e.bind("<KeyRelease>", self.schedule_update)
+        self.aero_chord_entry = ttk.Entry(aero, textvariable=self.aero_chord_var, width=10, state="readonly")
+        self.aero_chord_entry.grid(row=arow, column=1, sticky="ew", pady=2)
+
+        self.velocity_scale = tk.Scale(
+            aero,
+            from_=1,
+            to=300,
+            orient="horizontal",
+            variable=self.velocity_var,
+            showvalue=False,
+            resolution=1,
+            bg=self.colors["panel"],
+            fg=self.colors["fg"],
+            highlightthickness=0,
+            troughcolor=self.colors["entry"],
+            activebackground=self.colors["accent"],
+            command=lambda _value: self.schedule_update(),
+        )
+        self.velocity_scale.grid(row=arow, column=2, columnspan=2, sticky="ew", pady=(22, 4))
+
+        arow += 1
         ttk.Label(aero, text="Span [mm]").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
         e = ttk.Entry(aero, textvariable=self.span_var, width=10)
         e.grid(row=arow, column=3, sticky="ew", pady=2)
         e.bind("<KeyRelease>", self.schedule_update)
 
         arow += 1
-        ttk.Label(aero, text="Angle α [°]").grid(row=arow, column=2, sticky="w", padx=(8, 4), pady=2)
-        e = ttk.Entry(aero, textvariable=self.alpha_attack_var, width=10)
-        e.grid(row=arow, column=3, sticky="ew", pady=2)
-        e.bind("<KeyRelease>", self.schedule_update)
+        ttk.Label(aero, text="Density [kg/m³]").grid(row=arow, column=0, sticky="w", padx=(0, 4), pady=2)
+        # Advanced aerodynamic inputs remain instantiated so they can be made
+        # visible again without rebuilding the panel structure.
+        self.span_scale = tk.Scale(
+            aero,
+            from_=10,
+            to=5000,
+            orient="horizontal",
+            variable=self.span_var,
+            showvalue=False,
+            resolution=1,
+            bg=self.colors["panel"],
+            fg=self.colors["fg"],
+            highlightthickness=0,
+            troughcolor=self.colors["entry"],
+            activebackground=self.colors["accent"],
+            command=lambda _value: self.schedule_update(),
+        )
+        self.span_scale.grid(row=arow, column=2, columnspan=2, sticky="ew", pady=(0, 4))
 
         arow += 1
-        ttk.Label(aero, text="Density [kg/m³]").grid(row=arow, column=0, sticky="w", padx=(0, 4), pady=2)
         self.density_entry = ttk.Entry(aero, textvariable=self.density_var, width=10)
         self.density_entry.grid(row=arow, column=1, sticky="ew", pady=2)
         self.density_entry.bind("<KeyRelease>", self.schedule_update)
@@ -908,12 +928,14 @@ class App:
 
         summary = ttk.Frame(preview_frame)
         summary.pack(fill="x", pady=(0, 4))
-        summary_labels = [("Re [-]", self.reynolds_out_var), ("CL [-]", self.cl_out_var), ("CD [-]", self.cd_out_var)]
+        summary_labels = []
         for idx, (lbl, var) in enumerate(summary_labels):
             col = idx * 2
             summary.columnconfigure(col + 1, weight=1)
             ttk.Label(summary, text=f"{lbl}:").grid(row=0, column=col, sticky="w", padx=(0, 2))
             ttk.Label(summary, textvariable=var).grid(row=0, column=col + 1, sticky="w", padx=(0, 8))
+        if not summary_labels:
+            summary.pack_forget()
 
         text_row = ttk.Frame(preview_frame)
         text_row.pack(fill="x", expand=False)
@@ -940,6 +962,7 @@ class App:
 
         footer = ttk.Label(right, text="© Fabio Giuliodori", style="Footer.TLabel")
         footer.pack(anchor="e", pady=(8, 0))
+        self.setup_variable_sync()
 
     def configure_plot_theme(self):
         self.figure.patch.set_facecolor(self.colors["plot_bg"])
@@ -981,10 +1004,93 @@ class App:
         self.density_entry.config(state=state)
         self.viscosity_entry.config(state=state)
 
+    def update_expert_visibility(self):
+        # Advanced rows are currently hidden on purpose to keep the release UI
+        # compact. To re-enable them, remove the target rows from
+        # `always_hidden_rows` and optionally restore a visible Expert toggle.
+        # Row 1 keeps only the velocity slider visible; row 3 keeps only the
+        # span slider visible; rows 4+ are advanced.
+        always_hidden_rows = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+
+        for widget in self.aero_frame.grid_slaves():
+            image_value = ""
+            try:
+                image_value = str(widget.cget("image"))
+            except Exception:
+                image_value = ""
+
+            if image_value:
+                widget.grid_remove()
+                continue
+
+            row = int(widget.grid_info().get("row", -1))
+            column = int(widget.grid_info().get("column", -1))
+            if row == 1 and column < 2:
+                widget.grid_remove()
+                continue
+            if row == 3 and column < 2:
+                widget.grid_remove()
+                continue
+            if row in always_hidden_rows:
+                widget.grid_remove()
+
     def schedule_update(self, event=None):
         if self._update_job is not None:
             self.root.after_cancel(self._update_job)
         self._update_job = self.root.after(200, self.update_preview)
+
+    def setup_variable_sync(self):
+        self.code_var.trace_add("write", self.on_code_var_changed)
+        self.chord_var.trace_add("write", self.on_geometry_link_changed)
+        self.angle_var.trace_add("write", self.on_geometry_link_changed)
+        self.sync_digit_vars_from_code()
+        self.sync_aero_inputs_from_geometry()
+        self.update_expert_visibility()
+
+    def on_geometry_link_changed(self, *_args):
+        self.sync_aero_inputs_from_geometry()
+        self.schedule_update()
+
+    def sync_aero_inputs_from_geometry(self):
+        self.aero_chord_var.set(self.chord_var.get())
+        try:
+            alpha = float(self.angle_var.get().replace(",", "."))
+            self.alpha_attack_var.set(f"{alpha:g}")
+        except ValueError:
+            self.alpha_attack_var.set("")
+
+    def on_code_var_changed(self, *_args):
+        if self._syncing_code:
+            return
+        self.sync_digit_vars_from_code()
+
+    def sync_digit_vars_from_code(self):
+        code = self.code_var.get().strip()
+        if len(code) != 4 or not code.isdigit():
+            return
+        self._syncing_code = True
+        try:
+            self.naca_camber_var.set(int(code[0]))
+            self.naca_pos_var.set(int(code[1]))
+            self.naca_thickness_var.set(int(code[2:4]))
+        finally:
+            self._syncing_code = False
+
+    def on_digit_slider_changed(self, _value=None):
+        if self._syncing_code:
+            return
+        camber = self.naca_camber_var.get()
+        pos = self.naca_pos_var.get()
+        thickness = self.naca_thickness_var.get()
+        if camber != 0 and pos == 0:
+            pos = 1
+            self.naca_pos_var.set(1)
+        self._syncing_code = True
+        try:
+            self.code_var.set(f"{camber}{pos}{thickness:02d}")
+        finally:
+            self._syncing_code = False
+        self.schedule_update()
 
     @staticmethod
     def _parse_optional_float(txt):
@@ -993,14 +1099,13 @@ class App:
             return None
         return float(raw.replace(",", "."))
 
-    def compute_aero_results(self, vals):
+    def compute_aero_results(self, vals, alpha_override=None):
         code = vals["code"]
-        alpha = float(self.alpha_attack_var.get().replace(",", "."))
+        alpha = vals["angle_deg"] if alpha_override is None else float(alpha_override)
         velocity_kmh = float(self.velocity_var.get().replace(",", "."))
-        chord_mm = float(self.aero_chord_var.get().replace(",", "."))
         span_mm = float(self.span_var.get().replace(",", "."))
         velocity = velocity_kmh / 3.6
-        chord = chord_mm / 1000.0
+        chord = vals["chord"]
         span = span_mm / 1000.0
 
         fluid = self.fluid_var.get().strip().lower()
@@ -1027,10 +1132,12 @@ class App:
         params = get_airfoil_parameters(
             code=code,
             reynolds=reynolds,
-            use_internal_library=self.use_internal_aero_var.get(),
+            use_internal_library=True,
             overrides=overrides,
         )
         cl, cd = compute_cl_cd(alpha_deg=alpha, params=params)
+        if vals["mirror_x"]:
+            cl = -cl
         lift, drag, ld_ratio = compute_lift_drag(density=density, velocity=velocity, area=area, cl=cl, cd=cd)
 
         return {
@@ -1044,6 +1151,14 @@ class App:
         }
 
     def update_aero_display(self, aero):
+        if aero is None:
+            self.reynolds_out_var.set("-")
+            self.cl_out_var.set("-")
+            self.cd_out_var.set("-")
+            self.lift_out_var.set("-")
+            self.drag_out_var.set("-")
+            self.ld_out_var.set("-")
+            return
         self.reynolds_out_var.set(f"{aero['reynolds']:.3e}")
         self.cl_out_var.set(f"{aero['cl']:.4f}")
         self.cd_out_var.set(f"{aero['cd']:.4f}")
@@ -1102,7 +1217,12 @@ class App:
             vals = self.get_values()
             x, y = generate_airfoil_xy(vals)
             pts_text, x, y, _ = write_pts_text(x, y, decimals=vals["decimals"])
-            aero = self.compute_aero_results(vals)
+            # With the UI convention, positive clockwise rotation corresponds to
+            # positive aerodynamic angle of attack. Mirror X flips lift sign.
+            # Mirror Y still disables aero because it reverses the profile
+            # against the assumed left-to-right flow of this simplified model.
+            aero_enabled = vals["mode"] == "flat" and not vals["mirror_y"]
+            aero = self.compute_aero_results(vals) if aero_enabled else None
 
             self.last_pts_text = pts_text
             self.last_x = x
@@ -1112,7 +1232,7 @@ class App:
             self.text.insert("1.0", pts_text)
             self.update_aero_display(aero)
 
-            self.redraw_plot(x, y, vals)
+            self.redraw_plot(x, y, vals, aero)
         except Exception as e:
             self.reynolds_out_var.set("-")
             self.cl_out_var.set("-")
@@ -1122,7 +1242,14 @@ class App:
             self.ld_out_var.set("-")
             self.show_plot_error(str(e))
 
-    def redraw_plot(self, x, y, vals):
+    def compute_force_reference(self, vals):
+        max_force = 1e-9
+        for alpha in np.linspace(0.0, 90.0, 19):
+            aero = self.compute_aero_results(vals, alpha_override=float(alpha))
+            max_force = max(max_force, abs(aero["lift"]), abs(aero["drag"]))
+        return max_force
+
+    def redraw_plot(self, x, y, vals, aero):
         self.ax.clear()
         self.ax.set_facecolor(self.colors["plot_bg"])
         x_mm = np.array(x) * 1000.0
@@ -1155,8 +1282,74 @@ class App:
             dx = xmax - xmin
             dy = ymax - ymin
             base = max(vals["chord"] * 1000.0 * 0.02, 1e-6)
+            x_center = 0.5 * (xmin + xmax)
+            y_center = 0.5 * (ymin + ymax)
+            span_ref = max(dx, dy, vals["chord"] * 1000.0)
+            if aero is not None:
+                arrow_ref = max(span_ref * 0.28, 12.0)
+                force_ref = self.compute_force_reference(vals)
+                lift_len = arrow_ref * (abs(aero["lift"]) / force_ref)
+                drag_len = arrow_ref * (abs(aero["drag"]) / force_ref)
+                lift_tip_y = y_center + (lift_len if aero["lift"] >= 0 else -lift_len)
+                drag_x0 = x_center - span_ref * 0.10
+                drag_tip_x = drag_x0 + drag_len
+
+                self.ax.annotate(
+                    "",
+                    xy=(x_center, lift_tip_y),
+                    xytext=(x_center, y_center),
+                    arrowprops=dict(arrowstyle="-|>", lw=2.2, color="#34a853"),
+                )
+                self.ax.annotate(
+                    "",
+                    xy=(drag_tip_x, y_center),
+                    xytext=(drag_x0, y_center),
+                    arrowprops=dict(arrowstyle="-|>", lw=2.2, color="#ea4335"),
+                )
+                self.ax.text(
+                    x_center,
+                    lift_tip_y,
+                    f" Lift {aero['lift'] / 9.80665:.2f} kg",
+                    color="#34a853",
+                    va="bottom" if aero["lift"] >= 0 else "top",
+                    ha="left",
+                )
+                self.ax.text(
+                    drag_tip_x,
+                    y_center,
+                    f" Drag {aero['drag'] / 9.80665:.2f} kg",
+                    color="#ea4335",
+                    va="bottom",
+                    ha="left",
+                )
+
+                xmin = min(xmin, x_center, drag_x0, drag_tip_x)
+                xmax = max(xmax, x_center, drag_tip_x)
+                ymin = min(ymin, y_center, lift_tip_y)
+                ymax = max(ymax, y_center, lift_tip_y)
             pad_x = max(dx * 0.08, base)
             pad_y = max(dy * 0.12, base)
+
+            flow_y = ymax + pad_y * 0.45
+            flow_x0 = xmin - pad_x * 0.25
+            flow_x1 = flow_x0 + max(span_ref * 0.44, 48.0)
+            self.ax.annotate(
+                "",
+                xy=(flow_x1, flow_y),
+                xytext=(flow_x0, flow_y),
+                arrowprops=dict(arrowstyle="->", lw=1.8, linestyle="--", color=self.colors["muted"]),
+            )
+            self.ax.text(
+                flow_x0,
+                flow_y + pad_y * 0.12,
+                "Flow",
+                color=self.colors["muted"],
+                ha="left",
+                va="bottom",
+            )
+
+            xmax = max(xmax, flow_x1)
+            ymax = max(ymax, flow_y)
             self.ax.set_xlim(xmin - pad_x, xmax + pad_x)
             self.ax.set_ylim(ymin - pad_y, ymax + pad_y)
 
