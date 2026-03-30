@@ -6,6 +6,8 @@
 Airfoil Tools is a desktop GUI to generate 4-digit NACA profiles, a classic aerodynamic family used in wings, hydrofoils, and lifting surfaces.
 Fast export to `.pts` and `.dxf`, plus a quick estimate of `lift` and `drag` in a few steps.
 
+![gui](images/gui.png)
+
 Download the latest release exe:
 
 ```text
@@ -34,7 +36,7 @@ Airfoil Tools keeps it all in one GUI: generate the profile, export to `.pts` or
 - Quick export to `.pts` and `.dxf`
 - `lift` and `drag` estimates in the same flow
 
-![gui](images/gui.png)
+
 ![Manta](images/manta.jpg)
 
 ## Easy install (exe recommended)
