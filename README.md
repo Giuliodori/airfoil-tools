@@ -14,13 +14,6 @@ Download the latest release exe:
 https://github.com/giuliodori/airfoil-tools/releases/latest
 ```
 
-## Contribute in 3 steps
-
-1. Fork the repo and create a branch.
-2. Install requirements: `python -m pip install -r requirements.txt`
-3. Open a PR with a clear summary and verification steps.
-
-See `CONTRIBUTING.md` for details.
 
 ## Why it is useful
 
