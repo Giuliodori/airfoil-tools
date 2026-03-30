@@ -9,3 +9,11 @@ build/
 dist/*
 !dist/.gitkeep
 !dist/*.exe
+
+# Generated benchmark reports
+benchmarks/results/*
+!benchmarks/results/benchmark_summary.csv
+!benchmarks/results/benchmark_summary.png
+
+# Local benchmark source captures
+benchmarks/data_sources/

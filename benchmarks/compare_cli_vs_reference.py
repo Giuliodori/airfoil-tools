@@ -14,6 +14,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
+
 
 @dataclass
 class PointResult:
@@ -45,9 +50,26 @@ class PointResult:
         return self.cd_abs_err / abs(self.cd_ref) * 100.0
 
 
+@dataclass
+class CaseSummary:
+    case_id: str
+    case_path: str
+    source_name: str
+    source_url: str
+    points: int
+    mean_cl_abs_err: float
+    rmse_cl: float
+    max_cl_abs_err: float
+    mean_cl_pct_err: float
+    mean_cd_abs_err: float
+    rmse_cd: float
+    max_cd_abs_err: float
+    mean_cd_pct_err: float
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Compare CLI analyze values to reference Cl/Cd data.")
-    parser.add_argument("--case", required=True, help="Path to benchmark case JSON.")
+    parser.add_argument("--case", help="Path to benchmark case JSON. If omitted, run all JSON cases in benchmarks/cases.")
     parser.add_argument("--python", default=sys.executable, help="Python executable used to run CLI.")
     parser.add_argument("--cli", default="airfoil_tools.py", help="Path to airfoil_tools.py.")
     parser.add_argument("--output-dir", default="benchmarks/results", help="Directory for generated report files.")
@@ -62,6 +84,16 @@ def load_case(path: Path) -> dict:
     if missing:
         raise ValueError(f"Missing keys in case file {path}: {', '.join(missing)}")
     return case
+
+
+def discover_case_paths(case_arg: str | None) -> list[Path]:
+    if case_arg:
+        return [Path(case_arg)]
+    case_dir = Path("benchmarks/cases")
+    case_paths = sorted(case_dir.glob("*.json"))
+    if not case_paths:
+        raise ValueError(f"No benchmark case JSON files found in {case_dir}")
+    return case_paths
 
 
 def load_reference_rows(path: Path) -> list[dict]:
@@ -206,10 +238,106 @@ def write_markdown_report(path: Path, case: dict, points: list[PointResult], csv
     path.write_text("\n".join(content) + "\n", encoding="utf-8")
 
 
-def main() -> int:
-    args = parse_args()
+def build_case_summary(case: dict, case_path: Path, points: list[PointResult]) -> CaseSummary:
+    cl_abs = [p.cl_abs_err for p in points]
+    cd_abs = [p.cd_abs_err for p in points]
+    cl_pct = [p.cl_pct_err for p in points]
+    cd_pct = [p.cd_pct_err for p in points]
+    return CaseSummary(
+        case_id=str(case["case_id"]),
+        case_path=case_path.as_posix(),
+        source_name=str(case.get("source", {}).get("name", "-")),
+        source_url=str(case.get("source", {}).get("url", "-")),
+        points=len(points),
+        mean_cl_abs_err=_safe_mean(cl_abs),
+        rmse_cl=_rmse([p.cl_model - p.cl_ref for p in points]),
+        max_cl_abs_err=max(cl_abs),
+        mean_cl_pct_err=_safe_mean(cl_pct),
+        mean_cd_abs_err=_safe_mean(cd_abs),
+        rmse_cd=_rmse([p.cd_model - p.cd_ref for p in points]),
+        max_cd_abs_err=max(cd_abs),
+        mean_cd_pct_err=_safe_mean(cd_pct),
+    )
 
-    case_path = Path(args.case)
+
+def write_summary_csv(path: Path, summaries: list[CaseSummary]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "case_id",
+            "case_path",
+            "source_name",
+            "source_url",
+            "points",
+            "mean_cl_abs_err",
+            "rmse_cl",
+            "max_cl_abs_err",
+            "mean_cl_pct_err",
+            "mean_cd_abs_err",
+            "rmse_cd",
+            "max_cd_abs_err",
+            "mean_cd_pct_err",
+        ])
+        for s in summaries:
+            writer.writerow([
+                s.case_id,
+                s.case_path,
+                s.source_name,
+                s.source_url,
+                s.points,
+                f"{s.mean_cl_abs_err:.6g}",
+                f"{s.rmse_cl:.6g}",
+                f"{s.max_cl_abs_err:.6g}",
+                f"{s.mean_cl_pct_err:.6g}" if not math.isnan(s.mean_cl_pct_err) else "nan",
+                f"{s.mean_cd_abs_err:.6g}",
+                f"{s.rmse_cd:.6g}",
+                f"{s.max_cd_abs_err:.6g}",
+                f"{s.mean_cd_pct_err:.6g}" if not math.isnan(s.mean_cd_pct_err) else "nan",
+            ])
+
+
+def write_summary_chart(path: Path, summaries: list[CaseSummary]) -> Path | None:
+    if plt is None or not summaries:
+        return None
+    labels = [s.case_id for s in summaries]
+    cl_vals = [s.mean_cl_abs_err for s in summaries]
+    cd_vals = [s.mean_cd_abs_err for s in summaries]
+    cl_pct_vals = [s.mean_cl_pct_err for s in summaries]
+    cd_pct_vals = [s.mean_cd_pct_err for s in summaries]
+    x = list(range(len(summaries)))
+    fig, axes = plt.subplots(2, 2, figsize=(15, 9), constrained_layout=True)
+    axes[0, 0].bar(x, cl_vals, color="#1f77b4")
+    axes[0, 0].set_title("Mean |Cl error| by case")
+    axes[0, 0].set_ylabel("Mean |Cl error|")
+    axes[0, 0].set_xticks(x, labels, rotation=30, ha="right")
+    axes[0, 0].grid(axis="y", linestyle="--", alpha=0.4)
+
+    axes[0, 1].bar(x, cd_vals, color="#d62728")
+    axes[0, 1].set_title("Mean |Cd error| by case")
+    axes[0, 1].set_ylabel("Mean |Cd error|")
+    axes[0, 1].set_xticks(x, labels, rotation=30, ha="right")
+    axes[0, 1].grid(axis="y", linestyle="--", alpha=0.4)
+
+    axes[1, 0].bar(x, cl_pct_vals, color="#17a2b8")
+    axes[1, 0].set_title("Mean Cl % error by case")
+    axes[1, 0].set_ylabel("Mean Cl % error")
+    axes[1, 0].set_xticks(x, labels, rotation=30, ha="right")
+    axes[1, 0].grid(axis="y", linestyle="--", alpha=0.4)
+
+    axes[1, 1].bar(x, cd_pct_vals, color="#ff7f0e")
+    axes[1, 1].set_title("Mean Cd % error by case")
+    axes[1, 1].set_ylabel("Mean Cd % error")
+    axes[1, 1].set_xticks(x, labels, rotation=30, ha="right")
+    axes[1, 1].grid(axis="y", linestyle="--", alpha=0.4)
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=160)
+    plt.close(fig)
+    return path
+
+
+def run_case(case_path: Path, args: argparse.Namespace) -> tuple[Path, Path, CaseSummary]:
     case = load_case(case_path)
     ref_path = Path(case["reference_csv"])
     rows = load_reference_rows(ref_path)
@@ -253,9 +381,26 @@ def main() -> int:
 
     write_comparison_csv(csv_path, points)
     write_markdown_report(report_path, case, points, csv_path)
+    summary = build_case_summary(case, case_path, points)
+    return csv_path, report_path, summary
 
-    print(f"Generated CSV: {csv_path}")
-    print(f"Generated report: {report_path}")
+
+def main() -> int:
+    args = parse_args()
+    case_paths = discover_case_paths(args.case)
+    summaries: list[CaseSummary] = []
+    for case_path in case_paths:
+        csv_path, report_path, summary = run_case(case_path, args)
+        summaries.append(summary)
+        print(f"Processed case: {case_path}")
+        print(f"Generated CSV: {csv_path}")
+        print(f"Generated report: {report_path}")
+    summary_csv_path = Path(args.output_dir) / "benchmark_summary.csv"
+    write_summary_csv(summary_csv_path, summaries)
+    print(f"Generated summary CSV: {summary_csv_path}")
+    chart_path = write_summary_chart(Path(args.output_dir) / "benchmark_summary.png", summaries)
+    if chart_path is not None:
+        print(f"Generated summary chart: {chart_path}")
     return 0
 
 

@@ -33,4 +33,5 @@ This removes generated build folders/files such as `build/`, `dist/`, and local 
 ## Notes
 
 - The spec file includes the entire `images/` directory, required by GUI icon/logo assets.
+- Benchmark cases and generated benchmark reports are not included in the packaged executable.
 - If antivirus flags a fresh executable, rebuild and sign in your standard release pipeline.

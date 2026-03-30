@@ -1,0 +1,17 @@
+{
+  "case_id": "clarky_proxy_2412_uiuc_re6e4",
+  "description": "Clark-Y UIUC drag polar compared against NACA 2412 as the closest supported proxy at Reynolds ~6.1e4",
+  "source": {
+    "name": "UIUC Low-Speed Airfoil Tests Vol. 3",
+    "url": "https://m-selig.ae.illinois.edu/pd/pub/lsat/vol3/CLARKYB.DRG",
+    "notes": "Reference CSV is copied from the DRG table. Airfoil Tools currently supports NACA 4-digit profiles only, so this case intentionally benchmarks how well a NACA 2412 proxy tracks Clark-Y data."
+  },
+  "cli": {
+    "code": "2412",
+    "velocity_kmh": 32.29,
+    "span_mm": 200.0,
+    "chord_mm": 100.0,
+    "fluid": "air"
+  },
+  "reference_csv": "benchmarks/data/clarky_reference.csv"
+}

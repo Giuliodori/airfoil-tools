@@ -1,0 +1,17 @@
+{
+  "case_id": "naca4418r_nasa_re3p24e6",
+  "description": "NACA 4418R reconstructed from NACA-WR-L-451 graph and table at Reynolds ~3.24e6",
+  "source": {
+    "name": "NACA-WR-L-451",
+    "url": "https://ntrs.nasa.gov/api/citations/19930092823/downloads/19930092823.pdf",
+    "notes": "Reference CSV is conservatively reconstructed from Figure 4 and Table I. The source table reports slope 0.092 per degree, zero-lift angle about -2.8 deg, cl_max about 1.46, and cd_min about 0.0081 for the NACA 4418R section."
+  },
+  "cli": {
+    "code": "4418",
+    "velocity_kmh": 172.34,
+    "span_mm": 200.0,
+    "chord_mm": 1000.0,
+    "fluid": "air"
+  },
+  "reference_csv": "benchmarks/data/naca4418r_nasa_re3p24e6_reference.csv"
+}

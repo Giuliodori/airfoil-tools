@@ -1,0 +1,17 @@
+{
+  "case_id": "naca2414_uiuc_re6e4",
+  "description": "NACA 2414 in air using UIUC LSAT drag-polar table at Reynolds ~6.0e4",
+  "source": {
+    "name": "UIUC Low-Speed Airfoil Tests Vol. 2",
+    "url": "https://m-selig.ae.illinois.edu/pd/pub/lsat/vol2/NACA2414.DRG",
+    "notes": "Reference CSV is copied from the DRG table. The file reports average Reynolds about 6.02e4 for the drag points."
+  },
+  "cli": {
+    "code": "2414",
+    "velocity_kmh": 32.02,
+    "span_mm": 200.0,
+    "chord_mm": 100.0,
+    "fluid": "air"
+  },
+  "reference_csv": "benchmarks/data/naca2414_reference.csv"
+}

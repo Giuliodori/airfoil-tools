@@ -1,16 +1,16 @@
 {
-  "case_id": "naca0012_demo",
-  "description": "Demo benchmark case for NACA 0012 in air",
+  "case_id": "naca0012_ladson_re6e6",
+  "description": "NACA 0012 in air using Ladson tripped force data at Reynolds ~6.0e6",
   "source": {
-    "name": "REPLACE_WITH_TRUSTED_SOURCE",
+    "name": "Ladson force data via Turbulence Modeling Resource",
     "url": "https://tmbwg.github.io/turbmodels/naca0012_val.html",
-    "notes": "Populate benchmarks/data/naca0012_reference.csv with validated source values before analysis"
+    "notes": "Reference CSV is transcribed from the 120-grit tripped dataset in CLCD_Ladson_expdata.dat, which TMR attributes to NASA TM-4074 (Ladson, 1988)."
   },
   "cli": {
     "code": "0012",
-    "velocity_kmh": 120.0,
-    "span_mm": 200.0,
-    "chord_mm": 100.0,
+    "velocity_kmh": 319.15,
+    "span_mm": 1000.0,
+    "chord_mm": 1000.0,
     "fluid": "air"
   },
   "reference_csv": "benchmarks/data/naca0012_reference.csv"

@@ -1,0 +1,17 @@
+{
+  "case_id": "naca0015_nasa_re242k",
+  "description": "NACA 0015 reconstructed from NASA/CR-20205001147 figure and equations at Reynolds ~242,000",
+  "source": {
+    "name": "NASA/CR-20205001147",
+    "url": "https://ntrs.nasa.gov/api/citations/20205001147/downloads/Harris%20CR-20205001147_Final_7_1_2020.pdf",
+    "notes": "Reference CSV is reconstructed from Figure 7 and the text on page 10: lift-curve slope about 5.75 per radian, zero-lift angle about -0.75 deg, and the explicit Cd(alpha) approximation given in Eq. (9) up to about 12 deg."
+  },
+  "cli": {
+    "code": "0015",
+    "velocity_kmh": 12.87,
+    "span_mm": 200.0,
+    "chord_mm": 1000.0,
+    "fluid": "air"
+  },
+  "reference_csv": "benchmarks/data/naca0015_nasa_re242k_reference.csv"
+}

@@ -1,0 +1,17 @@
+{
+  "case_id": "naca4415_nlr_re1p01e6",
+  "description": "NACA 4415 clean tunnel data from NLR/OSU package at Reynolds ~1.01e6",
+  "source": {
+    "name": "NLR / Ohio State University Wind Tunnel Tests",
+    "url": "https://www.nlr.gov/wind/nwtc/airfoils-osu-data",
+    "notes": "Reference CSV extracted from N4415c100.txt in the NACA 4415 data package. Cl values use the corrected-data lines and Cd values use the reported drag coefficient by momentum."
+  },
+  "cli": {
+    "code": "4415",
+    "velocity_kmh": 53.72,
+    "span_mm": 200.0,
+    "chord_mm": 1000.0,
+    "fluid": "air"
+  },
+  "reference_csv": "benchmarks/data/naca4415_nlr_re1p01e6_reference.csv"
+}
