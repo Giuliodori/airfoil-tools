@@ -1,3 +1,5 @@
+"""Manta AirLab by Duilio.cc — Fabio Giuliodori."""
+
 # SPDX-License-Identifier: GPL-3.0-only OR LicenseRef-Duilio-Commercial
 #
 # This file is part of Airfoil Tools.

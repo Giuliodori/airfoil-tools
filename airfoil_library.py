@@ -1,3 +1,5 @@
+"""Manta AirLab by Duilio.cc — Fabio Giuliodori."""
+
 import math
 
 

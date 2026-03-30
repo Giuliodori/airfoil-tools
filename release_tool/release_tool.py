@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Release helper for Airfoil Tools.
+"""Manta AirLab by Duilio.cc — Fabio Giuliodori.
+
+Release helper for Airfoil Tools.
 
 Usage:
   python release_tool/release_tool.py
