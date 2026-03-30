@@ -29,13 +29,7 @@ except ImportError:
     Poly3DCollection = None
 
 from airfoil_library import get_airfoil_parameters
-
-
-FLUID_PRESETS = {
-    "air": {"rho": 1.225, "mu": 1.81e-5},
-    "water": {"rho": 997.0, "mu": 8.9e-4},
-    "salt water": {"rho": 1025.0, "mu": 1.08e-3},
-}
+from defaults import CLI_DEFAULTS, FLUID_PRESETS, GUI_DEFAULTS
 
 
 def _prompt_install(packages, context=""):
@@ -735,26 +729,26 @@ class App:
 
         # Logo moved inside Aerodynamics panel (bottom-right under overrides)
 
-        self.code_var = tk.StringVar(value="2412")
-        self.chord_var = tk.StringVar(value="100")
-        self.n_side_var = tk.StringVar(value="100")
-        self.mode_var = tk.StringVar(value="Flat profile")
-        self.radius_var = tk.StringVar(value="100")
-        self.curvature_dir_var = tk.StringVar(value="convex")
-        self.keep_developed_var = tk.BooleanVar(value=True)
-        self.angle_var = tk.StringVar(value="0")
-        self.decimals_var = tk.StringVar(value="6")
-        self.mirror_x_var = tk.BooleanVar(value=False)
-        self.mirror_y_var = tk.BooleanVar(value=False)
+        self.code_var = tk.StringVar(value=GUI_DEFAULTS["code"])
+        self.chord_var = tk.StringVar(value=GUI_DEFAULTS["chord_mm"])
+        self.n_side_var = tk.StringVar(value=GUI_DEFAULTS["points_side"])
+        self.mode_var = tk.StringVar(value=GUI_DEFAULTS["mode"])
+        self.radius_var = tk.StringVar(value=GUI_DEFAULTS["radius_mm"])
+        self.curvature_dir_var = tk.StringVar(value=GUI_DEFAULTS["curvature_dir"])
+        self.keep_developed_var = tk.BooleanVar(value=GUI_DEFAULTS["keep_developed_chord"])
+        self.angle_var = tk.StringVar(value=GUI_DEFAULTS["angle_deg"])
+        self.decimals_var = tk.StringVar(value=GUI_DEFAULTS["decimals"])
+        self.mirror_x_var = tk.BooleanVar(value=GUI_DEFAULTS["mirror_x"])
+        self.mirror_y_var = tk.BooleanVar(value=GUI_DEFAULTS["mirror_y"])
         # Advanced aerodynamic source toggle kept for future UI re-enable.
         # To restore it, add back the checkbox in the Aerodynamics panel and
         # switch `use_internal_library=True` in `compute_aero_results()` to this variable.
         self.use_internal_aero_var = tk.BooleanVar(value=True)
-        self.fluid_var = tk.StringVar(value="water")
-        self.velocity_var = tk.StringVar(value="50")
-        self.aero_chord_var = tk.StringVar(value="100")
-        self.span_var = tk.StringVar(value="200")
-        self.alpha_attack_var = tk.StringVar(value="0.0")
+        self.fluid_var = tk.StringVar(value=GUI_DEFAULTS["fluid"])
+        self.velocity_var = tk.StringVar(value=GUI_DEFAULTS["velocity_kmh"])
+        self.aero_chord_var = tk.StringVar(value=GUI_DEFAULTS["aero_chord_mm"])
+        self.span_var = tk.StringVar(value=GUI_DEFAULTS["span_mm"])
+        self.alpha_attack_var = tk.StringVar(value=GUI_DEFAULTS["alpha_deg"])
         self.density_var = tk.StringVar(value=str(FLUID_PRESETS["water"]["rho"]))
         self.viscosity_var = tk.StringVar(value=str(FLUID_PRESETS["water"]["mu"]))
         self.override_cd0_var = tk.StringVar(value="")
@@ -767,13 +761,13 @@ class App:
         self.lift_out_var = tk.StringVar(value="-")
         self.drag_out_var = tk.StringVar(value="-")
         self.ld_out_var = tk.StringVar(value="-")
-        self.naca_camber_var = tk.IntVar(value=2)
-        self.naca_pos_var = tk.IntVar(value=4)
-        self.naca_thickness_var = tk.IntVar(value=12)
+        self.naca_camber_var = tk.IntVar(value=GUI_DEFAULTS["naca_camber"])
+        self.naca_pos_var = tk.IntVar(value=GUI_DEFAULTS["naca_pos"])
+        self.naca_thickness_var = tk.IntVar(value=GUI_DEFAULTS["naca_thickness"])
         # Expert-mode state is intentionally kept even if the toggle is hidden.
         # To re-enable advanced controls, restore the Expert checkbox and relax
         # the row filtering inside `update_expert_visibility()`.
-        self.show_expert_var = tk.BooleanVar(value=False)
+        self.show_expert_var = tk.BooleanVar(value=GUI_DEFAULTS["show_expert"])
 
         geom = ttk.LabelFrame(left, text="Geometry", padding=8)
         geom.pack(fill="x")
@@ -2015,24 +2009,69 @@ def build_cli_parser():
 
     export_cmd = subparsers.add_parser("export", help="Export NACA 4-digit profile to .pts or .dxf.")
     export_cmd.add_argument("code", help="NACA 4-digit code, e.g. 2412.")
-    export_cmd.add_argument("--format", choices=["pts", "dxf"], default="pts", help="Output format (default: pts).")
+    export_cmd.add_argument(
+        "--format",
+        choices=["pts", "dxf"],
+        default=CLI_DEFAULTS["export_format"],
+        help="Output format (default: pts).",
+    )
     export_cmd.add_argument("-o", "--output", help="Output file path. Default: NACA<code>.<format>")
-    export_cmd.add_argument("--chord-mm", default=100.0, type=float, help="Chord in millimeters (default: 100).")
-    export_cmd.add_argument("--points-side", default=100, type=int, help="Points per side (default: 100).")
-    export_cmd.add_argument("--rotation-deg", default=0.0, type=float, help="Clockwise rotation in degrees.")
+    export_cmd.add_argument(
+        "--chord-mm",
+        default=CLI_DEFAULTS["chord_mm"],
+        type=float,
+        help="Chord in millimeters (default: 100).",
+    )
+    export_cmd.add_argument(
+        "--points-side",
+        default=CLI_DEFAULTS["points_side"],
+        type=int,
+        help="Points per side (default: 100).",
+    )
+    export_cmd.add_argument(
+        "--rotation-deg",
+        default=CLI_DEFAULTS["rotation_deg"],
+        type=float,
+        help="Clockwise rotation in degrees.",
+    )
     export_cmd.add_argument("--mirror-x", action="store_true", help="Mirror across X axis.")
     export_cmd.add_argument("--mirror-y", action="store_true", help="Mirror across Y axis.")
-    export_cmd.add_argument("--decimals", default=6, type=int, help="Decimals for .pts output (default: 6).")
+    export_cmd.add_argument(
+        "--decimals",
+        default=CLI_DEFAULTS["decimals"],
+        type=int,
+        help="Decimals for .pts output (default: 6).",
+    )
 
     analyze_cmd = subparsers.add_parser("analyze", help="Quick aerodynamic estimate for a NACA 4-digit profile.")
     analyze_cmd.add_argument("code", help="NACA 4-digit code, e.g. 0012.")
-    analyze_cmd.add_argument("--velocity-kmh", default=50.0, type=float, help="Flow speed in km/h (default: 50).")
-    analyze_cmd.add_argument("--span-mm", default=200.0, type=float, help="Span in millimeters (default: 200).")
-    analyze_cmd.add_argument("--chord-mm", default=100.0, type=float, help="Chord in millimeters (default: 100).")
-    analyze_cmd.add_argument("--alpha-deg", default=0.0, type=float, help="Angle of attack in degrees (default: 0).")
+    analyze_cmd.add_argument(
+        "--velocity-kmh",
+        default=CLI_DEFAULTS["velocity_kmh"],
+        type=float,
+        help="Flow speed in km/h (default: 50).",
+    )
+    analyze_cmd.add_argument(
+        "--span-mm",
+        default=CLI_DEFAULTS["span_mm"],
+        type=float,
+        help="Span in millimeters (default: 200).",
+    )
+    analyze_cmd.add_argument(
+        "--chord-mm",
+        default=CLI_DEFAULTS["chord_mm"],
+        type=float,
+        help="Chord in millimeters (default: 100).",
+    )
+    analyze_cmd.add_argument(
+        "--alpha-deg",
+        default=CLI_DEFAULTS["alpha_deg"],
+        type=float,
+        help="Angle of attack in degrees (default: 0).",
+    )
     analyze_cmd.add_argument(
         "--fluid",
-        default="water",
+        default=CLI_DEFAULTS["fluid"],
         choices=["air", "water", "salt water", "custom"],
         help="Fluid preset (default: water).",
     )
