@@ -792,6 +792,8 @@ class App:
         self.lift_out_var = tk.StringVar(value="-")
         self.drag_out_var = tk.StringVar(value="-")
         self.ld_out_var = tk.StringVar(value="-")
+        self.lift_label_var = tk.StringVar(value="Lift [kg]")
+        self.drag_label_var = tk.StringVar(value="Drag [kg]")
         self.naca_camber_var = tk.IntVar(value=GUI_DEFAULTS["naca_camber"])
         self.naca_pos_var = tk.IntVar(value=GUI_DEFAULTS["naca_pos"])
         self.naca_thickness_var = tk.IntVar(value=GUI_DEFAULTS["naca_thickness"])
@@ -1114,10 +1116,10 @@ class App:
         ttk.Label(aero, text="CD").grid(row=arow, column=0, sticky="w", pady=1)
         ttk.Label(aero, textvariable=self.cd_out_var).grid(row=arow, column=1, sticky="w", pady=1)
         arow += 1
-        ttk.Label(aero, text="Lift [kg]").grid(row=arow, column=0, sticky="w", pady=1)
+        ttk.Label(aero, textvariable=self.lift_label_var).grid(row=arow, column=0, sticky="w", pady=1)
         ttk.Label(aero, textvariable=self.lift_out_var).grid(row=arow, column=1, sticky="w", pady=1)
         arow += 1
-        ttk.Label(aero, text="Drag [kg]").grid(row=arow, column=0, sticky="w", pady=1)
+        ttk.Label(aero, textvariable=self.drag_label_var).grid(row=arow, column=0, sticky="w", pady=1)
         ttk.Label(aero, textvariable=self.drag_out_var).grid(row=arow, column=1, sticky="w", pady=1)
         arow += 1
         ttk.Label(aero, text="L/D").grid(row=arow, column=0, sticky="w", pady=1)
@@ -1210,9 +1212,9 @@ class App:
         kpi_frame.pack(fill="x", expand=False, pady=(8, 0))
         kpi_frame.columnconfigure(1, weight=1)
         kpi_frame.columnconfigure(3, weight=1)
-        ttk.Label(kpi_frame, text="Lift [kg]").grid(row=0, column=0, sticky="w")
+        ttk.Label(kpi_frame, textvariable=self.lift_label_var).grid(row=0, column=0, sticky="w")
         ttk.Label(kpi_frame, textvariable=self.lift_out_var, style="KPIValue.TLabel").grid(row=0, column=1, sticky="w", padx=(4, 12))
-        ttk.Label(kpi_frame, text="Drag [kg]").grid(row=0, column=2, sticky="w")
+        ttk.Label(kpi_frame, textvariable=self.drag_label_var).grid(row=0, column=2, sticky="w")
         ttk.Label(kpi_frame, textvariable=self.drag_out_var, style="KPIValueAlt.TLabel").grid(row=0, column=3, sticky="w", padx=(4, 0))
 
         preview_frame = ttk.LabelFrame(bottom_frame, text=".pts preview", padding=8)
@@ -1576,6 +1578,10 @@ class App:
     def compute_aero_results(self, vals, alpha_override=None):
         code = vals["code"]
         alpha = vals["angle_deg"] if alpha_override is None else float(alpha_override)
+        if vals["mirror_x"]:
+            # For an inverted section, the visually intuitive rotation that
+            # increases downforce is opposite to the baseline aero sign.
+            alpha = -alpha
         velocity_kmh = float(self.velocity_var.get().replace(",", "."))
         span_mm = float(self.span_var.get().replace(",", "."))
         velocity = velocity_kmh / 3.6
@@ -1632,12 +1638,16 @@ class App:
             self.lift_out_var.set("-")
             self.drag_out_var.set("-")
             self.ld_out_var.set("-")
+            self.lift_label_var.set("Lift [kg]")
+            self.drag_label_var.set("Drag [kg]")
             return
         self.reynolds_out_var.set(f"{aero['reynolds']:.3e}")
         self.cl_out_var.set(f"{aero['cl']:.4f}")
         self.cd_out_var.set(f"{aero['cd']:.4f}")
         lift_kg = aero["lift"] / 9.80665
         drag_kg = aero["drag"] / 9.80665
+        self.lift_label_var.set("Downforce [kg]" if lift_kg < 0 else "Lift [kg]")
+        self.drag_label_var.set("Drag [kg]")
         self.lift_out_var.set(f"{lift_kg:.3f}")
         self.drag_out_var.set(f"{drag_kg:.3f}")
         self.ld_out_var.set(f"{aero['ld_ratio']:.3f}")
@@ -1786,6 +1796,7 @@ class App:
                 lift_tip_y = y_center + (lift_len if aero["lift"] >= 0 else -lift_len)
                 drag_x0 = x_center - span_ref * 0.18
                 drag_tip_x = drag_x0 + drag_len
+                lift_caption = "Lift" if aero["lift"] >= 0 else "Downforce"
 
                 self.ax.annotate(
                     "",
@@ -1802,7 +1813,7 @@ class App:
                 self.ax.text(
                     x_center,
                     lift_tip_y,
-                    f" Lift {aero['lift'] / 9.80665:.2f} kg",
+                    f" {lift_caption} {abs(aero['lift']) / 9.80665:.2f} kg",
                     color="#34a853",
                     va="bottom" if aero["lift"] >= 0 else "top",
                     ha="left",
@@ -2100,6 +2111,7 @@ def build_cli_parser():
         type=float,
         help="Angle of attack in degrees (default: 0).",
     )
+    analyze_cmd.add_argument("--mirror-x", action="store_true", help="Invert the airfoil vertically for aero sign/convention.")
     analyze_cmd.add_argument(
         "--fluid",
         default=CLI_DEFAULTS["fluid"],
@@ -2170,11 +2182,15 @@ def run_cli(argv):
 
             reynolds = compute_reynolds(velocity=velocity, chord=chord, density=density, viscosity=viscosity)
             params = get_airfoil_parameters(code=args.code.strip(), reynolds=reynolds, use_internal_library=True, overrides={})
-            cl, cd = compute_cl_cd(alpha_deg=alpha_deg, params=params)
+            alpha_for_aero = -alpha_deg if args.mirror_x else alpha_deg
+            cl, cd = compute_cl_cd(alpha_deg=alpha_for_aero, params=params)
+            if args.mirror_x:
+                cl = -cl
             area = chord * span
             lift, drag, ld_ratio = compute_lift_drag(density=density, velocity=velocity, area=area, cl=cl, cd=cd)
 
-            print(f"NACA {args.code.strip()} | alpha={alpha_deg:g} deg | fluid={args.fluid}")
+            mirror_note = " | mirror_x" if args.mirror_x else ""
+            print(f"NACA {args.code.strip()} | alpha={alpha_deg:g} deg{mirror_note} | fluid={args.fluid}")
             print(f"Reynolds: {reynolds:.3e}")
             print(f"Cl: {cl:.4f}")
             print(f"Cd: {cd:.4f}")
