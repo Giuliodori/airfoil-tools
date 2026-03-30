@@ -1,0 +1,17 @@
+{
+  "case_id": "naca0012_demo",
+  "description": "Demo benchmark case for NACA 0012 in air",
+  "source": {
+    "name": "REPLACE_WITH_TRUSTED_SOURCE",
+    "url": "https://tmbwg.github.io/turbmodels/naca0012_val.html",
+    "notes": "Populate benchmarks/data/naca0012_reference.csv with validated source values before analysis"
+  },
+  "cli": {
+    "code": "0012",
+    "velocity_kmh": 120.0,
+    "span_mm": 200.0,
+    "chord_mm": 100.0,
+    "fluid": "air"
+  },
+  "reference_csv": "benchmarks/data/naca0012_reference.csv"
+}
