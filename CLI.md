@@ -78,6 +78,7 @@ Main options:
 - `--span-mm` span (default: `200`)
 - `--chord-mm` chord (default: `100`)
 - `--alpha-deg` angle of attack (default: `0`)
+- `--mirror-x` invert the airfoil vertically for aerodynamic sign/convention
 - `--fluid {air,water,salt water,custom}` (default: `water`)
 - `--density` required with `--fluid custom`
 - `--viscosity` required with `--fluid custom`

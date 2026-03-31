@@ -43,12 +43,11 @@ For most users, the executable is enough.
 
 Download the exe from the latest release.
 
-If you cloned or downloaded the repository ZIP, the main Windows file is:
-- `airfoil-tools\dist\airfoil-tools.exe`
+If you cloned the repository source, note that `dist/airfoil-tools.exe` is a build artifact and may be absent until you create a release build.
 
 ### 2) Run
 
-- Double-click `airfoil-tools\dist\airfoil-tools.exe`.
+- Double-click the executable downloaded from the latest release page.
 - The GUI opens and you can generate and export profiles immediately.
 
 
@@ -181,5 +180,5 @@ This project is released under a dual license:
 - GNU General Public License v3.0 (GPL-3.0-only) for open-source use
 - Commercial license for proprietary or closed-source use
 
-For commercial licenses:
+For commercial licensing requests and specific terms, write to:
 - info@duilio.cc
