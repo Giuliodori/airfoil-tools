@@ -489,22 +489,58 @@ def format_number(value: float, decimals: int = 6) -> str:
     return f"{value:.{decimals}f}"
 
 
-def write_pts_text(x, y, decimals: int = 6):
-    """Compatible .pts writer: x TAB y TAB z with z=0."""
+def write_pts_text(x, y, decimals: int = 6, coord_mode: str = "xyz"):
+    """Compatible .pts writer: x TAB y [TAB z] with z=0."""
     x, y = close_profile(x, y)
+    mode = coord_mode.strip().lower()
+    if mode not in {"xy", "xyz"}:
+        raise ValueError("Coordinate mode must be 'xy' or 'xyz'.")
     z = np.zeros_like(x)
     lines = []
     for xv, yv, zv in zip(x, y, z):
-        lines.append(
-            f"{format_number(float(xv), decimals)}\t"
-            f"{format_number(float(yv), decimals)}\t"
-            f"{format_number(float(zv), decimals)}"
-        )
+        if mode == "xy":
+            lines.append(
+                f"{format_number(float(xv), decimals)}\t"
+                f"{format_number(float(yv), decimals)}"
+            )
+        else:
+            lines.append(
+                f"{format_number(float(xv), decimals)}\t"
+                f"{format_number(float(yv), decimals)}\t"
+                f"{format_number(float(zv), decimals)}"
+            )
     return "\n".join(lines), x, y, z
 
 
-def write_dxf_polyline(path: str, x, y, layer: str = "AIRFOIL"):
-    """Export a closed contour as a 2D LWPOLYLINE on the XY plane."""
+def write_csv_text(x, y, decimals: int = 6, coord_mode: str = "xyz"):
+    """CSV writer: x,y or x,y,z with z=0."""
+    x, y = close_profile(x, y)
+    mode = coord_mode.strip().lower()
+    if mode not in {"xy", "xyz"}:
+        raise ValueError("Coordinate mode must be 'xy' or 'xyz'.")
+    z = np.zeros_like(x)
+
+    if mode == "xy":
+        lines = ["x,y"]
+    else:
+        lines = ["x,y,z"]
+    for xv, yv, zv in zip(x, y, z):
+        if mode == "xy":
+            lines.append(
+                f"{format_number(float(xv), decimals)},"
+                f"{format_number(float(yv), decimals)}"
+            )
+        else:
+            lines.append(
+                f"{format_number(float(xv), decimals)},"
+                f"{format_number(float(yv), decimals)},"
+                f"{format_number(float(zv), decimals)}"
+            )
+    return "\n".join(lines), x, y, z
+
+
+def write_dxf(path: str, x, y, layer: str = "AIRFOIL", entity: str = "polyline"):
+    """Export a closed contour as DXF polyline or spline on the XY plane."""
     try:
         import ezdxf
     except ImportError as exc:
@@ -526,6 +562,9 @@ def write_dxf_polyline(path: str, x, y, layer: str = "AIRFOIL"):
             ) from exc
 
     x, y = close_profile(x, y)
+    entity_mode = entity.strip().lower()
+    if entity_mode not in {"polyline", "spline"}:
+        raise ValueError("DXF entity must be 'polyline' or 'spline'.")
 
     doc = ezdxf.new("R2010")
     if layer not in doc.layers:
@@ -533,12 +572,18 @@ def write_dxf_polyline(path: str, x, y, layer: str = "AIRFOIL"):
 
     msp = doc.modelspace()
     points_2d = [(float(xv), float(yv)) for xv, yv in zip(x, y)]
-    msp.add_lwpolyline(points_2d, format="xy", dxfattribs={"layer": layer, "closed": True})
+    if entity_mode == "spline":
+        spline_points = list(points_2d)
+        if spline_points and spline_points[0] != spline_points[-1]:
+            spline_points.append(spline_points[0])
+        msp.add_spline(fit_points=spline_points, dxfattribs={"layer": layer})
+    else:
+        msp.add_lwpolyline(points_2d, format="xy", dxfattribs={"layer": layer, "closed": True})
 
     doc.saveas(path)
 
 
-def write_dxf_polyline_cli(path: str, x, y, layer: str = "AIRFOIL"):
+def write_dxf_cli(path: str, x, y, layer: str = "AIRFOIL", entity: str = "polyline"):
     """CLI DXF export: does not prompt for dependency installation."""
     try:
         import ezdxf
@@ -546,13 +591,32 @@ def write_dxf_polyline_cli(path: str, x, y, layer: str = "AIRFOIL"):
         raise RuntimeError("DXF export requires 'ezdxf'. Install with: pip install ezdxf") from exc
 
     x, y = close_profile(x, y)
+    entity_mode = entity.strip().lower()
+    if entity_mode not in {"polyline", "spline"}:
+        raise ValueError("DXF entity must be 'polyline' or 'spline'.")
     doc = ezdxf.new("R2010")
     if layer not in doc.layers:
         doc.layers.add(name=layer)
     msp = doc.modelspace()
     points_2d = [(float(xv), float(yv)) for xv, yv in zip(x, y)]
-    msp.add_lwpolyline(points_2d, format="xy", dxfattribs={"layer": layer, "closed": True})
+    if entity_mode == "spline":
+        spline_points = list(points_2d)
+        if spline_points and spline_points[0] != spline_points[-1]:
+            spline_points.append(spline_points[0])
+        msp.add_spline(fit_points=spline_points, dxfattribs={"layer": layer})
+    else:
+        msp.add_lwpolyline(points_2d, format="xy", dxfattribs={"layer": layer, "closed": True})
     doc.saveas(path)
+
+
+def write_dxf_polyline(path: str, x, y, layer: str = "AIRFOIL"):
+    """Backward-compatible wrapper for polyline DXF export."""
+    write_dxf(path, x, y, layer=layer, entity="polyline")
+
+
+def write_dxf_polyline_cli(path: str, x, y, layer: str = "AIRFOIL"):
+    """Backward-compatible wrapper for CLI polyline DXF export."""
+    write_dxf_cli(path, x, y, layer=layer, entity="polyline")
 
 
 def _triangle_normal(v1, v2, v3):
@@ -612,6 +676,7 @@ def build_pts_text(
     mirror_x: bool,
     mirror_y: bool,
     decimals: int = 6,
+    coord_mode: str = "xyz",
 ):
     """
     Backward compatible with previous API:
@@ -619,7 +684,7 @@ def build_pts_text(
     """
     x, y, z = naca4_points_base(code=code, n_side=n_side, chord=chord)
     x, y = transform_points(x, y, angle_deg=angle_deg, mirror_x=mirror_x, mirror_y=mirror_y)
-    pts_text, x, y, z = write_pts_text(x, y, decimals=decimals)
+    pts_text, x, y, z = write_pts_text(x, y, decimals=decimals, coord_mode=coord_mode)
     return pts_text, x, y, z
 
 
@@ -808,6 +873,8 @@ class App:
         self.keep_developed_var = tk.BooleanVar(value=GUI_DEFAULTS["keep_developed_chord"])
         self.angle_var = tk.StringVar(value=GUI_DEFAULTS["angle_deg"])
         self.decimals_var = tk.StringVar(value=GUI_DEFAULTS["decimals"])
+        self.coord_mode_var = tk.StringVar(value=CLI_DEFAULTS["export_coord_mode"])
+        self.dxf_entity_var = tk.StringVar(value=CLI_DEFAULTS["dxf_entity"])
         self.mirror_x_var = tk.BooleanVar(value=GUI_DEFAULTS["mirror_x"])
         self.mirror_y_var = tk.BooleanVar(value=GUI_DEFAULTS["mirror_y"])
         # Advanced aerodynamic source toggle kept for future UI re-enable.
@@ -1019,6 +1086,27 @@ class App:
             command=self.update_preview,
         ).grid(row=row, column=3, sticky="w", pady=2)
 
+        row += 1
+        ttk.Label(trans, text="Coord mode").grid(row=row, column=0, sticky="w", padx=(0, 4), pady=2)
+        self.coord_mode_combo = ttk.Combobox(
+            trans,
+            textvariable=self.coord_mode_var,
+            values=["xyz", "xy"],
+            state="readonly",
+            width=10,
+        )
+        self.coord_mode_combo.grid(row=row, column=1, sticky="ew", pady=2)
+        self.coord_mode_combo.bind("<<ComboboxSelected>>", self.schedule_update)
+        ttk.Label(trans, text="DXF entity").grid(row=row, column=2, sticky="w", padx=(8, 4), pady=2)
+        self.dxf_entity_combo = ttk.Combobox(
+            trans,
+            textvariable=self.dxf_entity_var,
+            values=["polyline", "spline"],
+            state="readonly",
+            width=10,
+        )
+        self.dxf_entity_combo.grid(row=row, column=3, sticky="ew", pady=2)
+
         aero = ttk.LabelFrame(left, text="Aerodynamics", padding=8)
         aero.pack(fill="x", pady=(6, 0))
         aero.columnconfigure(1, weight=1)
@@ -1197,8 +1285,9 @@ class App:
         ttk.Button(actions, text="Save .stl", command=self.save_stl).grid(row=0, column=0, sticky="ew", padx=(0, 4), pady=2)
         ttk.Button(actions, text="Save .pts", command=self.save_pts).grid(row=0, column=1, sticky="ew", pady=2)
         ttk.Button(actions, text="Save .dxf", command=self.save_dxf).grid(row=1, column=0, sticky="ew", padx=(0, 4), pady=2)
-        ttk.Button(actions, text="Update", command=self.update_preview).grid(row=1, column=1, sticky="ew", pady=2)
-        ttk.Button(actions, text="Copy preview", command=self.copy_preview).grid(row=2, column=0, columnspan=2, sticky="ew", pady=2)
+        ttk.Button(actions, text="Save .csv", command=self.save_csv).grid(row=1, column=1, sticky="ew", pady=2)
+        ttk.Button(actions, text="Update", command=self.update_preview).grid(row=2, column=0, sticky="ew", padx=(0, 4), pady=2)
+        ttk.Button(actions, text="Copy preview", command=self.copy_preview).grid(row=2, column=1, sticky="ew", pady=2)
 
         note = ttk.LabelFrame(left, text="Quick workflow", padding=8)
         note.pack(fill="x", pady=(6, 0))
@@ -1207,7 +1296,7 @@ class App:
             text=(
                 "1) Enter NACA code and main parameters.\n"
                 "2) Check live plot and aero values.\n"
-                "3) Save .pts, .dxf, or .stl from Actions.\n"
+                "3) Save .pts, .csv, .dxf, or .stl from Actions.\n"
                 "4) Use 'Copy preview' for quick export."
             ),
             justify="left",
@@ -1728,6 +1817,12 @@ class App:
         curvature_dir = self.curvature_dir_var.get().strip().lower()
         if curvature_dir not in {"convex", "concave"}:
             curvature_dir = "convex"
+        coord_mode = self.coord_mode_var.get().strip().lower()
+        if coord_mode not in {"xy", "xyz"}:
+            raise ValueError("Coordinate mode must be 'xy' or 'xyz'.")
+        dxf_entity = self.dxf_entity_var.get().strip().lower()
+        if dxf_entity not in {"polyline", "spline"}:
+            raise ValueError("DXF entity must be 'polyline' or 'spline'.")
 
         return {
             "mode": mode,
@@ -1740,6 +1835,8 @@ class App:
             "keep_developed_chord": True,
             "angle_deg": angle_deg,
             "decimals": decimals,
+            "coord_mode": coord_mode,
+            "dxf_entity": dxf_entity,
             "mirror_x": self.mirror_x_var.get(),
             "mirror_y": self.mirror_y_var.get(),
         }
@@ -1749,7 +1846,7 @@ class App:
         try:
             vals = self.get_values()
             x, y = generate_airfoil_xy(vals)
-            pts_text, x, y, _ = write_pts_text(x, y, decimals=vals["decimals"])
+            pts_text, x, y, _ = write_pts_text(x, y, decimals=vals["decimals"], coord_mode=vals["coord_mode"])
             # With the UI convention, positive clockwise rotation corresponds to
             # positive aerodynamic angle of attack. Mirror X flips lift sign.
             # Mirror Y still disables aero because it reverses the profile
@@ -2009,7 +2106,7 @@ class App:
         try:
             vals = self.get_values()
             x, y = generate_airfoil_xy(vals)
-            pts_text, _, _, _ = write_pts_text(x, y, decimals=vals["decimals"])
+            pts_text, _, _, _ = write_pts_text(x, y, decimals=vals["decimals"], coord_mode=vals["coord_mode"])
 
             default_name = f"NACA{vals['code']}.pts"
             path = filedialog.asksaveasfilename(
@@ -2043,8 +2140,31 @@ class App:
             if not path:
                 return
 
-            write_dxf_polyline(path, x, y)
+            write_dxf(path, x, y, entity=vals["dxf_entity"])
             messagebox.showinfo("Saved", f"DXF saved successfully:\n{path}")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def save_csv(self):
+        try:
+            vals = self.get_values()
+            x, y = generate_airfoil_xy(vals)
+            csv_text, _, _, _ = write_csv_text(x, y, decimals=vals["decimals"], coord_mode=vals["coord_mode"])
+
+            default_name = f"NACA{vals['code']}.csv"
+            path = filedialog.asksaveasfilename(
+                title="Save .csv file",
+                defaultextension=".csv",
+                initialfile=default_name,
+                filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+            )
+            if not path:
+                return
+
+            with open(path, "w", encoding="utf-8", newline="\n") as f:
+                f.write(csv_text)
+
+            messagebox.showinfo("Saved", f"CSV saved successfully:\n{path}")
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
@@ -2116,11 +2236,11 @@ def build_cli_parser():
     )
     subparsers = parser.add_subparsers(dest="command")
 
-    export_cmd = subparsers.add_parser("export", help="Export NACA 4-digit profile to .pts, .dxf, or .stl.")
+    export_cmd = subparsers.add_parser("export", help="Export NACA 4-digit profile to .pts, .csv, .dxf, or .stl.")
     export_cmd.add_argument("code", help="NACA 4-digit code, e.g. 2412.")
     export_cmd.add_argument(
         "--format",
-        choices=["pts", "dxf", "stl"],
+        choices=["pts", "csv", "dxf", "stl"],
         default=CLI_DEFAULTS["export_format"],
         help="Output format (default: pts).",
     )
@@ -2155,7 +2275,19 @@ def build_cli_parser():
         "--decimals",
         default=CLI_DEFAULTS["decimals"],
         type=int,
-        help="Decimals for .pts output (default: 6).",
+        help="Decimals for .pts/.csv output (default: 6).",
+    )
+    export_cmd.add_argument(
+        "--coord-mode",
+        choices=["xy", "xyz"],
+        default=CLI_DEFAULTS["export_coord_mode"],
+        help="Coordinate columns for .pts/.csv (default: xyz).",
+    )
+    export_cmd.add_argument(
+        "--dxf-entity",
+        choices=["polyline", "spline"],
+        default=CLI_DEFAULTS["dxf_entity"],
+        help="DXF entity type (default: polyline).",
     )
 
     analyze_cmd = subparsers.add_parser("analyze", help="Quick aerodynamic estimate for a NACA 4-digit profile.")
@@ -2230,11 +2362,15 @@ def run_cli(argv):
             fmt = args.format
             output = args.output or f"NACA{args.code}.{fmt}"
             if fmt == "pts":
-                pts_text, _, _, _ = write_pts_text(x, y, decimals=decimals)
+                pts_text, _, _, _ = write_pts_text(x, y, decimals=decimals, coord_mode=args.coord_mode)
                 with open(output, "w", encoding="utf-8", newline="\n") as f:
                     f.write(pts_text)
+            elif fmt == "csv":
+                csv_text, _, _, _ = write_csv_text(x, y, decimals=decimals, coord_mode=args.coord_mode)
+                with open(output, "w", encoding="utf-8", newline="\n") as f:
+                    f.write(csv_text)
             elif fmt == "dxf":
-                write_dxf_polyline_cli(output, x, y)
+                write_dxf_cli(output, x, y, entity=args.dxf_entity)
             else:
                 write_stl_ascii(output, x, y, span=span, solid_name=f"NACA{args.code}")
 

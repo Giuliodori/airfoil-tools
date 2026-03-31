@@ -13,7 +13,7 @@ python airfoil_tools.py --help
 
 ## Supported commands
 
-- `export`: export a NACA 4-digit profile to `.pts`, `.dxf`, or `.stl`
+- `export`: export a NACA 4-digit profile to `.pts`, `.csv`, `.dxf`, or `.stl`
 - `analyze`: print a quick aerodynamic estimate (`Re`, `Cl`, `Cd`, `lift`, `drag`, `L/D`)
 
 ---
@@ -26,6 +26,12 @@ Export `.pts` (default format):
 python airfoil_tools.py export 2412 -o NACA2412.pts
 ```
 
+Export `.csv`:
+
+```bash
+python airfoil_tools.py export 2412 --format csv --coord-mode xyz -o NACA2412.csv
+```
+
 Export `.dxf`:
 
 ```bash
@@ -35,7 +41,7 @@ python airfoil_tools.py export 0012 --format dxf -o NACA0012.dxf
 Main options:
 
 - `code` (required): NACA 4-digit code (example: `2412`)
-- `--format {pts,dxf,stl}` (default: `pts`)
+- `--format {pts,csv,dxf,stl}` (default: `pts`)
 - `-o, --output` output file path
 - `--chord-mm` chord in millimeters (default: `100`)
 - `--span-mm` span in millimeters for `.stl` (default: `200`)
@@ -43,7 +49,9 @@ Main options:
 - `--rotation-deg` clockwise rotation angle (default: `0`)
 - `--mirror-x` mirror over X axis
 - `--mirror-y` mirror over Y axis
-- `--decimals` decimals for `.pts` output (default: `6`)
+- `--decimals` decimals for `.pts`/`.csv` output (default: `6`)
+- `--coord-mode {xy,xyz}` columns for `.pts`/`.csv` (default: `xyz`)
+- `--dxf-entity {polyline,spline}` DXF entity type (default: `polyline`)
 
 If `--output` is omitted, the default filename is `NACA<code>.<format>`.
 
