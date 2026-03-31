@@ -13,7 +13,7 @@ python airfoil_tools.py --help
 
 ## Supported commands
 
-- `export`: export a NACA 4-digit profile to `.pts` or `.dxf`
+- `export`: export a NACA 4-digit profile to `.pts`, `.dxf`, or `.stl`
 - `analyze`: print a quick aerodynamic estimate (`Re`, `Cl`, `Cd`, `lift`, `drag`, `L/D`)
 
 ---
@@ -35,9 +35,10 @@ python airfoil_tools.py export 0012 --format dxf -o NACA0012.dxf
 Main options:
 
 - `code` (required): NACA 4-digit code (example: `2412`)
-- `--format {pts,dxf}` (default: `pts`)
+- `--format {pts,dxf,stl}` (default: `pts`)
 - `-o, --output` output file path
 - `--chord-mm` chord in millimeters (default: `100`)
+- `--span-mm` span in millimeters for `.stl` (default: `200`)
 - `--points-side` points per side (default: `100`)
 - `--rotation-deg` clockwise rotation angle (default: `0`)
 - `--mirror-x` mirror over X axis

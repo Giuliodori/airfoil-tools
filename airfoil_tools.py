@@ -555,6 +555,45 @@ def write_dxf_polyline_cli(path: str, x, y, layer: str = "AIRFOIL"):
     doc.saveas(path)
 
 
+def _triangle_normal(v1, v2, v3):
+    n = np.cross(v2 - v1, v3 - v1)
+    norm = np.linalg.norm(n)
+    if norm <= 1e-15:
+        return np.array([0.0, 0.0, 0.0], dtype=float)
+    return n / norm
+
+
+def write_stl_ascii(path: str, x, y, span: float, solid_name: str = "airfoil"):
+    """Export an extruded airfoil mesh as ASCII STL."""
+    mesh = build_extruded_mesh(x, y, span)
+    triangles = []
+
+    for quad in mesh["side_quads"]:
+        p0, p1, p2, p3 = [np.asarray(v, dtype=float) for v in quad]
+        triangles.append((p0, p1, p2))
+        triangles.append((p0, p2, p3))
+
+    root = [np.asarray(v, dtype=float) for v in mesh["root_cap"]]
+    tip = [np.asarray(v, dtype=float) for v in mesh["tip_cap"]]
+    for i in range(1, len(root) - 1):
+        triangles.append((root[0], root[i], root[i + 1]))
+    for i in range(1, len(tip) - 1):
+        triangles.append((tip[0], tip[i], tip[i + 1]))
+
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(f"solid {solid_name}\n")
+        for v1, v2, v3 in triangles:
+            n = _triangle_normal(v1, v2, v3)
+            f.write(f"  facet normal {n[0]:.9e} {n[1]:.9e} {n[2]:.9e}\n")
+            f.write("    outer loop\n")
+            f.write(f"      vertex {v1[0]:.9e} {v1[1]:.9e} {v1[2]:.9e}\n")
+            f.write(f"      vertex {v2[0]:.9e} {v2[1]:.9e} {v2[2]:.9e}\n")
+            f.write(f"      vertex {v3[0]:.9e} {v3[1]:.9e} {v3[2]:.9e}\n")
+            f.write("    endloop\n")
+            f.write("  endfacet\n")
+        f.write(f"endsolid {solid_name}\n")
+
+
 def naca4_points_base(code: str, n_side: int = 100, chord: float = 1.0):
     """
     Backward compatible with previous API:
@@ -1158,7 +1197,8 @@ class App:
         ttk.Button(actions, text="Update", command=self.update_preview).grid(row=0, column=0, sticky="ew", padx=(0, 4), pady=2)
         ttk.Button(actions, text="Save .pts", command=self.save_pts).grid(row=0, column=1, sticky="ew", pady=2)
         ttk.Button(actions, text="Save .dxf", command=self.save_dxf).grid(row=1, column=0, sticky="ew", padx=(0, 4), pady=2)
-        ttk.Button(actions, text="Copy preview", command=self.copy_preview).grid(row=1, column=1, sticky="ew", pady=2)
+        ttk.Button(actions, text="Save .stl", command=self.save_stl).grid(row=1, column=1, sticky="ew", pady=2)
+        ttk.Button(actions, text="Copy preview", command=self.copy_preview).grid(row=2, column=0, columnspan=2, sticky="ew", pady=2)
 
         note = ttk.LabelFrame(left, text="Quick workflow", padding=8)
         note.pack(fill="x", pady=(6, 0))
@@ -1167,7 +1207,7 @@ class App:
             text=(
                 "1) Enter NACA code and main parameters.\n"
                 "2) Check live plot and aero values.\n"
-                "3) Save .pts or .dxf from Actions.\n"
+                "3) Save .pts, .dxf, or .stl from Actions.\n"
                 "4) Use 'Copy preview' for quick export."
             ),
             justify="left",
@@ -2001,6 +2041,26 @@ class App:
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
+    def save_stl(self):
+        try:
+            vals = self.get_values()
+            x, y = generate_airfoil_xy(vals)
+
+            default_name = f"NACA{vals['code']}.stl"
+            path = filedialog.asksaveasfilename(
+                title="Save .stl file",
+                defaultextension=".stl",
+                initialfile=default_name,
+                filetypes=[("STL files", "*.stl"), ("All files", "*.*")],
+            )
+            if not path:
+                return
+
+            write_stl_ascii(path, x, y, vals["span"], solid_name=f"NACA{vals['code']}")
+            messagebox.showinfo("Saved", f"STL saved successfully:\n{path}")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
     def copy_preview(self):
         txt = self.text.get("1.0", "end-1c")
         self.root.clipboard_clear()
@@ -2049,11 +2109,11 @@ def build_cli_parser():
     )
     subparsers = parser.add_subparsers(dest="command")
 
-    export_cmd = subparsers.add_parser("export", help="Export NACA 4-digit profile to .pts or .dxf.")
+    export_cmd = subparsers.add_parser("export", help="Export NACA 4-digit profile to .pts, .dxf, or .stl.")
     export_cmd.add_argument("code", help="NACA 4-digit code, e.g. 2412.")
     export_cmd.add_argument(
         "--format",
-        choices=["pts", "dxf"],
+        choices=["pts", "dxf", "stl"],
         default=CLI_DEFAULTS["export_format"],
         help="Output format (default: pts).",
     )
@@ -2075,6 +2135,12 @@ def build_cli_parser():
         default=CLI_DEFAULTS["rotation_deg"],
         type=float,
         help="Clockwise rotation in degrees.",
+    )
+    export_cmd.add_argument(
+        "--span-mm",
+        default=CLI_DEFAULTS["span_mm"],
+        type=float,
+        help="Span in millimeters (used for .stl, default: 200).",
     )
     export_cmd.add_argument("--mirror-x", action="store_true", help="Mirror across X axis.")
     export_cmd.add_argument("--mirror-y", action="store_true", help="Mirror across Y axis.")
@@ -2138,6 +2204,7 @@ def run_cli(argv):
         if args.command == "export":
             ensure_numpy()
             chord = _positive_float(str(args.chord_mm), "Chord") / 1000.0
+            span = _positive_float(str(args.span_mm), "Span") / 1000.0
             n_side = _positive_int(str(args.points_side), "Points per side", minimum=2)
             decimals = _positive_int(str(args.decimals), "Decimals", minimum=0)
             if decimals > 12:
@@ -2159,8 +2226,10 @@ def run_cli(argv):
                 pts_text, _, _, _ = write_pts_text(x, y, decimals=decimals)
                 with open(output, "w", encoding="utf-8", newline="\n") as f:
                     f.write(pts_text)
-            else:
+            elif fmt == "dxf":
                 write_dxf_polyline_cli(output, x, y)
+            else:
+                write_stl_ascii(output, x, y, span=span, solid_name=f"NACA{args.code}")
 
             print(f"Saved {fmt.upper()} file: {output}")
             return 0
