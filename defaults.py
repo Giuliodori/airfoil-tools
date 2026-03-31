@@ -31,6 +31,8 @@ GUI_DEFAULTS = {
 
 CLI_DEFAULTS = {
     "export_format": "pts",
+    "export_coord_mode": "xyz",
+    "dxf_entity": "polyline",
     "chord_mm": 100.0,
     "points_side": 100,
     "rotation_deg": 0.0,
