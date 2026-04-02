@@ -2380,12 +2380,17 @@ class App:
             self.header_status_var.set("Check the current inputs")
             self.preview_mode_var.set("-")
             self.preview_points_var.set("-")
+            self.preview_format_var.set("-")
             self.reynolds_out_var.set("-")
             self.cl_out_var.set("-")
             self.cd_out_var.set("-")
             self.lift_out_var.set("-")
             self.drag_out_var.set("-")
             self.ld_out_var.set("-")
+            self.last_pts_text = ""
+            self.last_x = None
+            self.last_y = None
+            self.text.delete("1.0", "end")
             self.show_plot_error(str(e))
 
     def compute_force_references(self, vals):
@@ -2735,10 +2740,17 @@ class App:
             messagebox.showerror("Error", str(e))
 
     def copy_preview(self):
-        txt = self.text.get("1.0", "end-1c")
+        if self._update_job is not None:
+            self.root.after_cancel(self._update_job)
+            self._update_job = None
+        self.update_preview()
+        txt = self.last_pts_text.strip()
+        if not txt:
+            messagebox.showwarning("Copy unavailable", "No preview text is available to copy.")
+            return
         self.root.clipboard_clear()
         self.root.clipboard_append(txt)
-        self.root.update()
+        self.root.update_idletasks()
         messagebox.showinfo("Copied", "Preview copied to clipboard.")
 
 
