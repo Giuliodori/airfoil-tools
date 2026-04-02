@@ -3,53 +3,65 @@
 [![Latest Release](https://img.shields.io/github/v/release/giuliodori/airfoil-tools)](https://github.com/giuliodori/airfoil-tools/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/giuliodori/airfoil-tools/ci.yml?branch=main)](https://github.com/giuliodori/airfoil-tools/actions)
 
-Airfoil Tools is a desktop GUI to generate 4-digit NACA profiles, a classic aerodynamic family used in wings, hydrofoils, and lifting surfaces.
-Fast export to `.pts`, `.dxf`, and `.stl` (with span-based extrusion for STL), plus a quick estimate of `lift` and `drag` in a few steps.
+Airfoil Tools is a local desktop app for generating, previewing, and exporting 4-digit NACA airfoils without bouncing between calculators, scripts, and CAD cleanup steps.
+If you need a section fast for a wing, hydrofoil, control surface, prototype, or workshop test piece, the app gets you from NACA code to usable geometry in a few clicks.
 
 ![gui](images/gui.jpg)
 
-Download the latest release exe:
+Download the latest Windows release:
 
 ```text
 https://github.com/giuliodori/airfoil-tools/releases/latest
 ```
 
 
-## Why it is useful
+## Why people use it
 
-When you need a 4-digit NACA profile ready for CAD or simulation, starting from scratch takes time and the tools are not immediate.
+Most early airfoil work is not blocked by "lack of a solver". It is blocked by friction:
 
-Between calculations, formats, and different tools, the path from idea to a usable profile slows the project and adds friction.
+- finding the right profile
+- generating clean geometry
+- exporting in the format your downstream tool actually accepts
+- getting a quick sanity check before moving on
 
-Airfoil Tools keeps it all in one GUI: generate the profile, export to `.pts`, `.dxf`, `.stl`, or `.csv`, and get a quick `lift` and `drag` estimate (not CFD).
-You can work in classic flat mode or in curved mode (radius-based) for bent sections.
-Benchmark validation against NASA, UIUC, and NLR/OSU reference data shows good agreement on the best-supported cases, with mean `Cl` differences around `0.3%` to `5%` and mean `Cd` differences around `6%` to `9%`. Harder low-Reynolds cases can still reach about `20%` mean `Cl` difference.
+Airfoil Tools compresses that workflow into one local app: enter the NACA code, preview the section, export to `.pts`, `.dxf`, `.stl`, or `.csv`, and get a quick `lift` / `drag` estimate when you need a fast directional answer.
 
-## What you get right away
+It is built for practical 4-digit NACA work, not for heavyweight analysis pipelines.
+
+## What you can do in a minute
 
 - Instant generation of 4-digit NACA profiles
-- Quick export to `.pts`, `.dxf`, `.stl`, and `.csv` (solid from profile + span for STL)
-- Flat profile and curved profile (radius) modes in the same GUI
-- `lift` and `drag` estimates in the same flow
+- Live preview while you adjust the section
+- Export to `.pts`, `.dxf`, `.stl`, and `.csv`
+- Create an STL directly from profile + span for quick 3D workflows
+- Switch between flat profile and curved profile (radius) modes
+- Get a quick aerodynamic estimate in the same flow
 
 
 ![Manta](images/manta.jpg)
 
-## Easy install (exe recommended)
+## Who it is for
 
-For most users, the executable is enough.
+- Makers and builders who want geometry ready for CAD or 3D printing
+- RC, marine, and hydrofoil experiments where speed matters more than deep solver setup
+- Students and labs that need a simple way to inspect classic NACA sections
+- Engineers doing early-stage concept work before CFD or detailed validation
 
-### 1) Download
+## Fastest way to try it
 
-Download the exe from the latest release.
+For most users, the Windows executable is the right starting point.
+
+### 1) Download the exe
+
+Get it from the latest release:
 
 If you cloned or downloaded the repository ZIP, the main Windows file is:
 - `airfoil-tools\dist\airfoil-tools.exe`
 
-### 2) Run
+### 2) Open it
 
 - Double-click `airfoil-tools\dist\airfoil-tools.exe`.
-- The GUI opens and you can generate and export profiles immediately.
+- The GUI opens and you can generate and export a profile immediately.
 
 Alternative quick start from the repository folder:
 - Double-click `airfoil-tools.bat`
@@ -91,9 +103,13 @@ If you are a power user and want terminal commands, see the dedicated CLI guide:
 
 - [`CLI.md`](CLI.md)
 
-## Benchmark snapshot
+## Validation snapshot
 
-The aerodynamic estimate is checked against a small benchmark suite built from UIUC, NASA, and NLR/OSU reference data.
+The aerodynamic estimate is intended as a quick engineering check, not CFD and not a full XFOIL replacement.
+To keep that claim honest, the repository includes a benchmark suite built from UIUC, NASA, and NLR/OSU reference data.
+On the best-supported cases, mean `Cl` differences are around `0.3%` to `5%` and mean `Cd` differences around `6%` to `9%`.
+Harder low-Reynolds cases can still reach about `20%` mean `Cl` difference, so the estimate should be treated as directional rather than final validation.
+
 The chart below is generated by `benchmarks/compare_cli_vs_reference.py` and gives a quick view of absolute and percentage error by case.
 
 ![benchmark summary](benchmarks/results/benchmark_summary.png)
