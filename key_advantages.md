@@ -29,16 +29,23 @@ Important limits to state clearly:
 
 These are the advantages that are defensible from the current codebase and docs.
 
-### 1. Faster path from idea to usable geometry
+### 1. Direct wing-section design from the GUI
 
-The strongest advantage is workflow compression:
+The strongest advantage is not just "fast export". It is direct interactive design.
 
-- profile definition
-- live preview
-- quick aero estimate
-- export to production-friendly formats
+In the GUI, the user can move sliders and immediately see how the airfoil and the quick aerodynamic response change while editing:
 
-All of this happens in one local app. That is a real benefit for makers, RC users, marine/hydrofoil experiments, early concept work, and quick CAD preparation.
+- camber
+- camber position
+- thickness
+- chord
+- span
+- section rotation
+- curved/radius-based shaping
+
+That means a designer can adjust the section visually and get live feedback on `lift`, `drag`, `Cl`, `Cd`, and `L/D` without stopping for a complex CFD workflow.
+
+This is the clearest real value of the product: it helps users converge quickly on a reasonable wing or foil sizing with good practical approximation before deeper validation.
 
 ### 2. Local desktop workflow
 
@@ -94,9 +101,19 @@ The value is not that Airfoil Tools replaces classic solvers, but that it reduce
 
 - no terminal-first workflow for the main use case
 - no multi-tool handoff just to get a section exported
-- immediate visual feedback while editing
+- immediate visual and numeric feedback while editing
 
-This is especially strong for early-stage geometry work.
+This is especially strong for early-stage geometry work and first-pass wing sizing.
+
+## Positioning that should stay explicit
+
+One message should remain very clear in all product copy:
+
+- Airfoil Tools does not replace CFD.
+- It does not replace wind-tunnel work or experimental validation.
+- It does help designers reach a good first approximation faster, directly from the GUI.
+
+That is a credible and useful claim, and stronger than pretending to be a full analysis suite.
 
 ## Safer comparison angles
 
@@ -119,9 +136,10 @@ Avoid saying:
 
 These are aligned with the current product.
 
-- "A fast desktop workflow for 4-digit NACA profiles, from geometry to export."
+- "Design a 4-digit NACA wing section directly from the GUI and see lift and drag react in real time."
+- "A fast desktop workflow for 4-digit NACA profiles, from geometry tuning to export."
 - "Generate, inspect, bend, and export NACA sections in one local app."
-- "Quick geometry, quick checks, ready-to-use CAD exports."
+- "Adjust the profile with sliders, get a quick aerodynamic check, and export ready-to-use geometry."
 - "Built for practical 4-digit NACA work, not for bloated workflows."
 
 ## Competitor framing
@@ -140,5 +158,5 @@ That positioning is honest and already supported by the repository.
 If only three advantages should survive into a landing page or store listing, use these:
 
 1. Local desktop workflow with no browser friction.
-2. Geometry, quick aero estimate, and export in one tool.
-3. Flat and curved 4-digit NACA workflow with ready-to-use output formats.
+2. Direct GUI-based profile tuning with live geometry and quick lift/drag feedback.
+3. Geometry, quick aero estimate, and export in one tool for first-pass design work.
