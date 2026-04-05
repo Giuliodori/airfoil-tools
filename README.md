@@ -58,6 +58,8 @@ Get it from the latest release:
 If you cloned or downloaded the repository ZIP, the main Windows file is:
 - `airfoil-tools\dist\airfoil-tools.exe`
 
+On some Windows systems, a newly downloaded unsigned executable may show a SmartScreen prompt the first time it is opened.
+
 ### 2) Open it
 
 - Double-click `airfoil-tools\dist\airfoil-tools.exe`.

@@ -34,4 +34,4 @@ This removes generated build folders/files such as `build/`, `dist/`, and local 
 
 - The spec file includes the entire `images/` directory, required by GUI icon/logo assets.
 - Benchmark cases and generated benchmark reports are not included in the packaged executable.
-- If antivirus flags a fresh executable, rebuild and sign in your standard release pipeline.
+- Unsigned Windows executables may show `Unknown publisher` and trigger Microsoft Defender SmartScreen warnings when downloaded from the internet.
