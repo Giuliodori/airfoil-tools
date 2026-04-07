@@ -1,0 +1,30 @@
+{
+  "python.analysis.include": [
+    "airfoil_library.py",
+    "airfoil_tools.py",
+    "defaults.py",
+    "release_tool"
+  ],
+  "python.analysis.exclude": [
+    "**/__pycache__",
+    "build",
+    "dist",
+    "benchmarks",
+    "benchmarks/data",
+    "benchmarks/results"
+  ],
+  "files.watcherExclude": {
+    "**/__pycache__/**": true,
+    "build/**": true,
+    "dist/**": true,
+    "benchmarks/data/**": true,
+    "benchmarks/results/**": true
+  },
+  "search.exclude": {
+    "**/__pycache__": true,
+    "build": true,
+    "dist": true,
+    "benchmarks/data": true,
+    "benchmarks/results": true
+  }
+}
