@@ -1,4 +1,4 @@
-"""Manta AirLab by Duilio.cc | Fabio Giuliodori."""
+"""Manta AirLab | Fabio Giuliodori — Explore https://duilio.cc."""
 
 # SPDX-License-Identifier: GPL-3.0-only OR LicenseRef-Duilio-Commercial
 #
@@ -1382,7 +1382,7 @@ class App:
         title_row = ttk.Frame(header_left, style="Hero.TFrame")
         title_row.pack(anchor="w")
         ttk.Label(title_row, text="Airfoil Tools", style="HeroTitle.TLabel").pack(side="left")
-        ttk.Label(title_row, text="by Fabio Giuliodori", style="HeroSignature.TLabel").pack(side="left", padx=(8, 0), pady=(2, 0))
+        ttk.Label(title_row, text="Manta AirLab | Fabio Giuliodori — Explore https://duilio.cc", style="HeroSignature.TLabel").pack(side="left", padx=(8, 0), pady=(2, 0))
 
         header_right = ttk.Frame(header, style="Hero.TFrame", padding=(10, 0, 0, 0))
         header_right.grid(row=0, column=1, sticky="e")
@@ -1857,7 +1857,7 @@ class App:
 
         footer = ttk.Label(
             right,
-            text="Manta-Airlab | Fabio Giuliodori | duilio.cc",
+            text="Manta AirLab | Fabio Giuliodori — Explore https://duilio.cc",
             style="Footer.TLabel",
         )
         footer.pack(anchor="e", pady=(10, 0))

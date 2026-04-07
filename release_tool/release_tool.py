@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Manta AirLab by Duilio.cc — Fabio Giuliodori.
+"""Manta AirLab | Fabio Giuliodori — Explore https://duilio.cc.
 
 Release helper for Airfoil Tools.
 
