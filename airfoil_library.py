@@ -1,4 +1,4 @@
-"""Manta AirLab by Duilio.cc — Fabio Giuliodori."""
+"""Manta AirLab | Fabio Giuliodori — Explore https://duilio.cc."""
 
 import math
 
