@@ -26,6 +26,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from pathlib import Path
 import time
+from typing import Any, cast
 
 try:
     import numpy as np
@@ -178,6 +179,7 @@ def ensure_numpy():
     global np
     if np is None:
         np = importlib.import_module("numpy")
+    return np
 
 
 
@@ -258,12 +260,12 @@ class App:
         except Exception:
             pass
 
-    def get_theme_key(self, theme_value):
+    def get_theme_key(self, theme_value: str | None) -> str:
         if theme_value in THEME_PRESETS:
             return theme_value
         return THEME_LABEL_TO_KEY.get(theme_value, GUI_DEFAULTS["theme"])
 
-    def apply_theme(self, theme_value=None):
+    def apply_theme(self, theme_value: str | None = None):
         theme_key = self.get_theme_key(theme_value or self.theme_var.get())
         self.colors = dict(THEME_PRESETS[theme_key]["colors"])
         self.theme_var.set(THEME_KEY_TO_LABEL[theme_key])
@@ -547,10 +549,11 @@ class App:
 
     def refresh_theme_widgets(self):
         self.root.configure(bg=self.colors["bg"])
-        if getattr(self, "advanced_window", None) is not None:
+        advanced_window = getattr(self, "advanced_window", None)
+        if advanced_window is not None:
             try:
-                if self.advanced_window.winfo_exists():
-                    self.advanced_window.configure(bg=self.colors["bg"])
+                if advanced_window.winfo_exists():
+                    advanced_window.configure(bg=self.colors["bg"])
             except Exception:
                 pass
 
@@ -1233,7 +1236,7 @@ class App:
             from_=10,
             to=2000,
             orient="horizontal",
-            variable=self.chord_var,
+            variable=cast(Any, self.chord_var),
             showvalue=False,
             resolution=1,
             bg=self.colors["panel"],
@@ -1251,7 +1254,7 @@ class App:
             from_=10,
             to=5000,
             orient="horizontal",
-            variable=self.span_var,
+            variable=cast(Any, self.span_var),
             showvalue=False,
             resolution=1,
             bg=self.colors["panel"],
@@ -1309,7 +1312,7 @@ class App:
             from_=-60,
             to=60,
             orient="horizontal",
-            variable=self.angle_var,
+            variable=cast(Any, self.angle_var),
             showvalue=False,
             resolution=1,
             bg=self.colors["panel"],
@@ -1366,7 +1369,7 @@ class App:
             from_=1,
             to=300,
             orient="horizontal",
-            variable=self.velocity_var,
+            variable=cast(Any, self.velocity_var),
             showvalue=False,
             resolution=1,
             bg=self.colors["panel"],
@@ -1498,6 +1501,8 @@ class App:
             style="Muted.TLabel",
         ).pack(side="right")
 
+        if Figure is None or FigureCanvasTkAgg is None:
+            raise RuntimeError("matplotlib is required for GUI plotting.")
         self.figure = Figure(figsize=(7, 3.55), dpi=100)
         self.ax = self.figure.add_subplot(111)
         self.figure.subplots_adjust(left=0.035, right=0.985, bottom=0.055, top=0.955)
@@ -1613,13 +1618,13 @@ class App:
         if mode == "3d":
             self.figure.subplots_adjust(left=0.03, right=0.985, bottom=0.05, top=0.95)
             try:
-                self.ax.set_position([0.015, 0.07, 0.97, 0.84])
+                self.ax.set_position((0.015, 0.07, 0.97, 0.84))
             except Exception:
                 pass
         else:
             self.figure.subplots_adjust(left=0.055, right=0.985, bottom=0.08, top=0.94)
             try:
-                self.ax.set_position([0.06, 0.12, 0.91, 0.76])
+                self.ax.set_position((0.06, 0.12, 0.91, 0.76))
             except Exception:
                 pass
 
@@ -1749,6 +1754,8 @@ class App:
             return
 
         state = self._pan_state
+        if state is None:
+            return
         dx = event.xdata - state["xdata"]
         dy = event.ydata - state["ydata"]
         xmin, xmax = state["xlim"]
@@ -1758,6 +1765,8 @@ class App:
 
     def pan_3d_axes(self, event):
         state = self._pan_state
+        if state is None:
+            return
         dx_px = event.x - state["x"]
         dy_px = event.y - state["y"]
 
@@ -1954,6 +1963,7 @@ class App:
         self.library_browse_button.config(state="normal" if not is_naca else "disabled")
 
     def build_library_airfoil_xy(self, vals):
+        np_mod = ensure_numpy()
         profile_name = vals.get("library_profile_name", "").strip()
         if not profile_name:
             raise ValueError("Select a library profile.")
@@ -1961,8 +1971,8 @@ class App:
         if geom is None:
             geom = self._airfoil_db.get_profile_geometry(profile_name)
             self._library_geometry_cache[profile_name] = geom
-        x = np.array(geom["x"], dtype=float) * vals["chord"]
-        y = np.array(geom["y"], dtype=float) * vals["chord"]
+        x = np_mod.array(geom["x"], dtype=float) * vals["chord"]
+        y = np_mod.array(geom["y"], dtype=float) * vals["chord"]
         if vals["mode"] == "curved":
             x, y = curve_profile_xy_generic(
                 x,
@@ -2365,13 +2375,14 @@ class App:
 
     @staticmethod
     def _normalize_profile_chord_one(x_vals, y_vals):
-        x = np.asarray(x_vals, dtype=float)
-        y = np.asarray(y_vals, dtype=float)
+        np_mod = ensure_numpy()
+        x = np_mod.asarray(x_vals, dtype=float)
+        y = np_mod.asarray(y_vals, dtype=float)
         x, y = strip_duplicate_closing_point(x, y)
         if len(x) < 3:
             raise RuntimeError("Geometry invalid for XFOIL.")
-        xmin = float(np.min(x))
-        xmax = float(np.max(x))
+        xmin = float(np_mod.min(x))
+        xmax = float(np_mod.max(x))
         span = xmax - xmin
         if span <= 1e-12:
             raise RuntimeError("Geometry invalid for XFOIL (zero chord).")
@@ -2380,6 +2391,7 @@ class App:
         return x_norm, y_norm
 
     def _build_xfoil_profile_points(self, vals):
+        np_mod = ensure_numpy()
         if vals["source_kind"] == "library":
             profile_name = vals.get("library_profile_name", "").strip()
             if not profile_name:
@@ -2388,8 +2400,8 @@ class App:
             if geom is None:
                 geom = self._airfoil_db.get_profile_geometry(profile_name)
                 self._library_geometry_cache[profile_name] = geom
-            x_raw = np.array(geom["x"], dtype=float)
-            y_raw = np.array(geom["y"], dtype=float)
+            x_raw = np_mod.array(geom["x"], dtype=float)
+            y_raw = np_mod.array(geom["y"], dtype=float)
             return self._normalize_profile_chord_one(x_raw, y_raw)
 
         x_raw, y_raw = build_base_airfoil_xy(
@@ -3009,9 +3021,10 @@ class App:
             self.show_plot_error(str(e))
 
     def compute_force_references(self, vals):
+        np_mod = ensure_numpy()
         max_lift = 1e-9
         max_drag = 1e-9
-        for alpha in np.linspace(0.0, 90.0, 19):
+        for alpha in np_mod.linspace(0.0, 90.0, 19):
             aero = self.compute_aero_results(vals, alpha_override=float(alpha))
             max_lift = max(max_lift, abs(aero["lift"]))
             max_drag = max(max_drag, abs(aero["drag"]))
@@ -3030,10 +3043,11 @@ class App:
         self.redraw_plot_2d(x, y, vals, aero)
 
     def redraw_plot_2d(self, x, y, vals, aero):
+        np_mod = ensure_numpy()
         self.ax.clear()
         self.ax.set_facecolor(self.colors["plot_bg"])
-        x_mm = np.array(x) * 1000.0
-        y_mm = np.array(y) * 1000.0
+        x_mm = np_mod.array(x) * 1000.0
+        y_mm = np_mod.array(y) * 1000.0
         line_color = self.colors["accent"]
         self.ax.plot(x_mm, y_mm, marker=".", markersize=2, linewidth=1.3, color=line_color)
 
@@ -3066,8 +3080,8 @@ class App:
             velocity_kmh = 0.0
 
         if len(x_mm) > 0:
-            xmin, xmax = float(np.min(x_mm)), float(np.max(x_mm))
-            ymin, ymax = float(np.min(y_mm)), float(np.max(y_mm))
+            xmin, xmax = float(np_mod.min(x_mm)), float(np_mod.max(x_mm))
+            ymin, ymax = float(np_mod.min(y_mm)), float(np_mod.max(y_mm))
             dx = xmax - xmin
             dy = ymax - ymin
             base = max(vals["chord"] * 1000.0 * 0.02, 1e-6)
@@ -3162,6 +3176,10 @@ class App:
         self.canvas.draw_idle()
 
     def redraw_plot_3d(self, x, y, vals):
+        np_mod = ensure_numpy()
+        if Poly3DCollection is None:
+            raise RuntimeError("matplotlib 3D support is required for 3D preview.")
+        ax3d = cast(Any, self.ax)
         self.ax.clear()
         self.ax.set_facecolor(self.colors["plot_bg"])
         mesh = build_extruded_mesh(x, y, vals["span"])
@@ -3178,7 +3196,7 @@ class App:
             linewidths=0.35,
             alpha=0.35,
         )
-        self.ax.add_collection3d(poly)
+        ax3d.add_collection3d(poly)
 
         cap_poly = Poly3DCollection(
             [root_cap_mm, tip_cap_mm],
@@ -3187,17 +3205,17 @@ class App:
             linewidths=0.7,
             alpha=0.48,
         )
-        self.ax.add_collection3d(cap_poly)
+        ax3d.add_collection3d(cap_poly)
 
-        root_closed = np.vstack([root_mm, root_mm[0]])
-        tip_closed = np.vstack([tip_mm, tip_mm[0]])
-        self.ax.plot(root_closed[:, 0], root_closed[:, 1], root_closed[:, 2], color=self.colors["accent"], linewidth=1.4)
-        self.ax.plot(tip_closed[:, 0], tip_closed[:, 1], tip_closed[:, 2], color=self.colors["accent_alt"], linewidth=1.4)
+        root_closed = np_mod.vstack([root_mm, root_mm[0]])
+        tip_closed = np_mod.vstack([tip_mm, tip_mm[0]])
+        ax3d.plot(root_closed[:, 0], root_closed[:, 1], root_closed[:, 2], color=self.colors["accent"], linewidth=1.4)
+        ax3d.plot(tip_closed[:, 0], tip_closed[:, 1], tip_closed[:, 2], color=self.colors["accent_alt"], linewidth=1.4)
 
         step = max(1, len(root_mm) // 24)
         for i in range(0, len(root_mm), step):
-            rib = np.vstack([root_mm[i], tip_mm[i]])
-            self.ax.plot(rib[:, 0], rib[:, 1], rib[:, 2], color=self.colors["muted"], linewidth=0.7, alpha=0.8)
+            rib = np_mod.vstack([root_mm[i], tip_mm[i]])
+            ax3d.plot(rib[:, 0], rib[:, 1], rib[:, 2], color=self.colors["muted"], linewidth=0.7, alpha=0.8)
 
         mode_txt = "Flat profile" if vals["mode"] == "flat" else "Curved profile"
         profile_label = vals["library_profile_name"] if vals.get("source_kind") == "library" else f"NACA {vals['code']}"
@@ -3217,7 +3235,7 @@ class App:
         except Exception:
             pass
 
-        xyz = np.vstack([root_mm, tip_mm])
+        xyz = np_mod.vstack([root_mm, tip_mm])
         display = compute_display_limits_3d(xyz)
         self.ax.set_xlim(*display["xlim"])
         self.ax.set_ylim(*display["ylim"])
