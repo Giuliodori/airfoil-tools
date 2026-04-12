@@ -208,6 +208,40 @@ def build_curved_airfoil_xy(code: str, n_side: int, chord: float, radius: float,
     return close_profile(x_all, y_all)
 
 
+def curve_profile_xy_generic(x, y, radius: float, convex: bool = True, keep_developed_chord: bool = True):
+    if radius <= 0:
+        raise ValueError("Curvature radius must be greater than zero.")
+
+    x = np.array(x, dtype=float)
+    y = np.array(y, dtype=float)
+    if len(x) != len(y):
+        raise ValueError("X and Y arrays must have the same length.")
+    if len(x) < 3:
+        raise ValueError("Profile must contain at least 3 points.")
+
+    if keep_developed_chord:
+        phi = x / radius
+    else:
+        if np.max(np.abs(x)) > radius:
+            raise ValueError(
+                "With linear projected chord, absolute X must be <= radius. Increase radius or enable 'keep developed chord'."
+            )
+        ratio = np.clip(x / radius, -1.0, 1.0)
+        phi = np.arcsin(ratio)
+
+    sign = 1.0 if convex else -1.0
+    x_base = radius * np.sin(phi)
+    y_base = sign * radius * (1.0 - np.cos(phi))
+    tx = np.cos(phi)
+    ty = sign * np.sin(phi)
+    nx = -ty
+    ny = tx
+
+    x_curved = x_base + y * nx
+    y_curved = y_base + y * ny
+    return close_profile(x_curved, y_curved)
+
+
 def transform_points(x, y, angle_deg=0.0, mirror_x=False, mirror_y=False):
     x = np.array(x, dtype=float)
     y = np.array(y, dtype=float)

@@ -3,9 +3,9 @@
 [![Latest Release](https://img.shields.io/github/v/release/giuliodori/airfoil-tools)](https://github.com/giuliodori/airfoil-tools/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/giuliodori/airfoil-tools/ci.yml?branch=main)](https://github.com/giuliodori/airfoil-tools/actions)
 
-Manta AirLab is a local desktop app for designing, previewing, and exporting 4-digit NACA airfoils without bouncing between calculators, scripts, CAD cleanup, and heavyweight solver workflows.
-Its main advantage is direct GUI-based design: move sliders for camber, thickness, chord, span, rotation, mirroring, or curved shaping and immediately see how geometry, `lift`, and `drag` react.
-If you need a section fast for a wing, hydrofoil, control surface, prototype, or workshop test piece, the app gets you from first idea to usable geometry in a few clicks, already scaled to practical working proportions for CAD or STL export.
+Manta AirLab is a local desktop app for designing, previewing, and exporting airfoils without bouncing between calculators, scripts, CAD cleanup, and heavyweight solver workflows.
+You can work in dual source mode: fast procedural `NACA 4-digit` generation or `Library` profiles loaded from `database/airfoil.db` (geometry + polars + metadata).
+Its main advantage is direct GUI-based design: move controls for chord, span, rotation, mirroring, curved shaping, and aerodynamic inputs, and immediately see how geometry plus `lift`/`drag` react.
 
 Project sponsorship: `duilio.cc`
 
@@ -38,9 +38,10 @@ It does not replace CFD or experimental testing. It helps you arrive at a good f
 ## What you can do in a minute
 
 - Instant generation of 4-digit NACA profiles
+- Switch source between `NACA` and `Library` profiles from local DB
 - Live preview while you adjust the section from the GUI
 - Switch between `2D` and `3D` visualization of the same geometry
-- Real-time response of quick `lift`, `drag`, `Cl`, `Cd`, and `L/D` estimates while editing
+- Real-time response of `lift`, `drag`, `Cl`, `Cd`, `Cm`, and `L/D` while editing
 - Change chord, span, rotation, mirroring, and curve shape and see the result immediately
 - Export to `.pts`, `.dxf`, `.stl`, and `.csv`
 - Export geometry already at the working chord and span instead of rescaling later
@@ -50,7 +51,9 @@ It does not replace CFD or experimental testing. It helps you arrive at a good f
 - Generate a ready-to-use STL for rapid prototype and slicer workflows without rebuilding the solid in another tool first
 - Switch between flat profile and curved profile (radius) modes
 - Use fluid presets for air, water, salt water, or custom properties
+- Include temperature (`1..40 °C`) in the Reynolds/force model
 - Override key quick-model parameters such as `cd0`, `k_drag`, `cl_max`, and `alpha_zero_lift_deg`
+- Run `XFOIL Simulation` from GUI to override interpolated/tabular coefficients live
 - Preview the generated point data in-app and copy it directly when needed
 - Use it for first-pass wing or foil sizing before CFD and physical tests
 
@@ -106,6 +109,7 @@ python -m pip install -r requirements.txt
 Auto-install: if `numpy` or `matplotlib` are missing, the app will prompt you at launch.
 If `ezdxf` is missing, the app will prompt you when saving `.dxf`.
 Local runtime assets such as `database/airfoil.db` and `xfoil/xfoil.exe` are stored in local workspace folders and are not versioned.
+Running setup again refreshes `airfoil.db` to the latest published release (unless you pass `--skip-airfoil-db`).
 
 Bootstrap everything automatically:
 
@@ -208,7 +212,7 @@ That means:
 - optional `2D` / `3D` confirmation before export
 - local export to CAD- and prototype-friendly formats without browser dependency
 
-That narrower scope is intentional. It keeps the tool fast, readable, and useful for first-pass design work instead of turning it into a broader but heavier analysis suite.
+That scope remains intentional: fast first-pass work with practical geometry/export flow, now extended with reusable Library profiles and DB-based aerodynamic interpolation.
 
 ## A short history of NACA profiles: the "LEGO" of aerodynamics
 

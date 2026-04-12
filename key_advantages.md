@@ -5,11 +5,12 @@ It should not rely on broad marketing claims or on competitor limitations that m
 
 ## What Manta AirLab really does today
 
-Manta AirLab is a lightweight desktop app for working with 4-digit NACA sections.
+Manta AirLab is a lightweight desktop app for working with airfoil sections in dual source mode: `4-digit NACA` and `Library` profiles from local DB.
 
 Confirmed capabilities in the current project:
 
 - Generate 4-digit NACA profiles from the numeric code.
+- Select reusable airfoils from `database/airfoil.db` (geometry + polars + metadata).
 - Edit the main profile parameters directly: camber, camber position, thickness, chord, span, rotation.
 - Work in both flat mode and curved mode with radius-based bending.
 - Update the effective section scale directly from chord and span values, so geometry stays in practical downstream proportions.
@@ -21,7 +22,12 @@ Confirmed capabilities in the current project:
 - Switch between `2D` and `3D` visualization in the same workflow.
 - Preview the generated point output directly in the app and copy it without saving a file first.
 - Show a quick aerodynamic estimate with `Re`, `Cl`, `Cd`, `lift`, `drag`, and `L/D`.
+- Include `Cm` in aerodynamic outputs.
+- Interpolate aerodynamic coefficients from DB polars (log-Re + linear-alpha) in Library mode.
+- Mark out-of-domain force outputs as `ND` (without blocking geometry preview/export).
+- Run a GUI `XFOIL Simulation` and override current aero coefficients live.
 - Work with fluid presets for air, water, salt water, or custom properties.
+- Include temperature-dependent fluid effects (`1..40 °C`) in Reynolds/force calculations.
 - Allow custom aerodynamic overrides for parameters such as `cd0`, `k_drag`, `cl_max`, and `alpha_zero_lift_deg`.
 - Run from GUI or CLI.
 - Keep the workflow local on the machine, without requiring a web session.
@@ -29,7 +35,7 @@ Confirmed capabilities in the current project:
 
 Important limits to state clearly:
 
-- It is focused on 4-digit NACA profiles, not a general airfoil design suite.
+- It is optimized for NACA + Library first-pass workflows, not a full multi-physics design suite.
 - The aerodynamic model is a quick estimate, not CFD and not a full XFOIL replacement.
 - The tool is optimized for speed and practicality, not for high-end solver depth.
 
@@ -58,7 +64,18 @@ It happens in the same design loop where the user is already checking the aerody
 
 This is the clearest real value of the product: it helps users converge quickly on a reasonable wing or foil sizing with good practical approximation before deeper validation.
 
-### 2. Local desktop workflow
+### 2. Reuse known profiles via local Library DB
+
+The biggest evolution over the first version is that workflow is no longer only procedural NACA generation.
+Users can now select existing profiles from local DB and apply the same transformation/export pipeline.
+
+Practical impact:
+
+- reuse known airfoils instead of regenerating from scratch
+- compare procedural and library profiles in the same GUI flow
+- use tabular aerodynamic data as baseline for quick decisions
+
+### 3. Local desktop workflow
 
 Manta AirLab runs as a desktop executable or from source.
 This gives a few practical benefits that are worth stating:
@@ -71,7 +88,7 @@ This gives a few practical benefits that are worth stating:
 
 This is more concrete than claiming to be "better" than web tools in general.
 
-### 3. Export-first usability
+### 4. Export-first usability
 
 Many tools are good at visualization or exploration but add friction when the user simply needs geometry ready for CAD or downstream processing.
 
@@ -85,7 +102,7 @@ Manta AirLab is strong when the user wants:
 
 This export-first angle is one of the clearest real differentiators.
 
-### 4. Curved section workflow in the same app
+### 5. Curved section workflow in the same app
 
 The curved-profile mode is an actual product advantage because it keeps:
 
@@ -95,7 +112,7 @@ The curved-profile mode is an actual product advantage because it keeps:
 
 That is useful when the target is not just a flat section but a bent or radius-based geometry.
 
-### 5. Immediate 2D and 3D understanding of the same geometry
+### 6. Immediate 2D and 3D understanding of the same geometry
 
 The app is not limited to a flat section plot.
 It also supports direct `2D` / `3D` visualization of the same profile workflow.
@@ -107,7 +124,7 @@ That helps in two ways:
 
 This is useful because the user does not have to imagine the extrusion or export first just to confirm whether the geometry looks right.
 
-### 6. Transparent validation mindset
+### 7. Transparent validation mindset
 
 The repo includes benchmark cases, source notes, and summary outputs.
 That does not mean the tool is "the most accurate", but it does support a stronger and more credible message:
@@ -118,7 +135,7 @@ That does not mean the tool is "the most accurate", but it does support a strong
 
 This is a better claim than generic "high accuracy".
 
-### 7. Lower friction than legacy engineering workflows
+### 8. Lower friction than legacy engineering workflows
 
 This is true if phrased carefully.
 The value is not that Manta AirLab replaces classic solvers, but that it reduces setup cost for common tasks:
@@ -174,7 +191,7 @@ It wins when the user wants the shortest path from a known 4-digit NACA idea to 
 
 These are real, supportable advantages that are either missing or underplayed in the current text.
 
-### 8. GUI first, but not GUI only
+### 9. GUI first, but not GUI only
 
 Many lightweight airfoil tools are either browser-first or analysis-first.
 Manta AirLab already supports both direct interactive work and command-line usage:
@@ -184,7 +201,7 @@ Manta AirLab already supports both direct interactive work and command-line usag
 
 This is a concrete advantage because the same product can serve both quick manual iteration and more systematic batch or documentation workflows.
 
-### 9. Faster handoff from concept to fabrication
+### 10. Faster handoff from concept to fabrication
 
 Some alternatives are excellent for studying polars or comparing profiles, but still leave the user to rebuild or reformat geometry before manufacturing use.
 
@@ -197,7 +214,7 @@ Manta AirLab already reduces that gap by letting the user:
 
 The practical message is not only "analysis", but "less geometry rework before CAD, CAM, or 3D printing".
 
-### 10. Geometry is ready in working proportions, not only as a normalized profile
+### 11. Geometry is ready in working proportions, not only as a normalized profile
 
 One subtle but important advantage is that the user is not only generating a theoretical section shape.
 The tool already works with chord and span values as part of the same geometry flow.
@@ -210,7 +227,7 @@ That matters because many workflows lose time after export on tasks like:
 
 Manta AirLab reduces that friction by preparing geometry in the proportions the user is already designing around.
 
-### 11. Better fit for constrained or offline environments
+### 12. Better fit for constrained or offline environments
 
 Compared with browser-based workflows, a local executable remains easier to use when:
 
@@ -220,7 +237,7 @@ Compared with browser-based workflows, a local executable remains easier to use 
 
 This is especially relevant for educational, prototyping, and maker use cases where simplicity matters more than cloud features.
 
-### 12. Lower cognitive load than broad multi-method suites
+### 13. Lower cognitive load than broad multi-method suites
 
 A broad airfoil or wing-analysis suite can be powerful, but it also asks the user to navigate more concepts, more analysis modes, and more setup choices.
 
@@ -234,7 +251,7 @@ Manta AirLab benefits from being narrower:
 That narrower scope is not a weakness for the intended use case.
 It is a usability advantage for first-pass design work.
 
-### 13. GPLv3 keeps the licensing model simple and explicit
+### 14. GPLv3 keeps the licensing model simple and explicit
 
 The project uses GPL-3.0-only across the repository.
 That is not a commercial-use differentiator, but it is a clarity advantage:
@@ -245,7 +262,7 @@ That is not a commercial-use differentiator, but it is a clarity advantage:
 
 That simplicity reduces ambiguity when evaluating whether the tool fits an engineering workflow.
 
-### 14. Evidence-backed quick estimates instead of black-box claims
+### 15. Evidence-backed quick estimates instead of black-box claims
 
 Some tools present aerodynamic outputs with little context on what is behind them.
 Manta AirLab can make a better credibility claim because the repository already includes:
@@ -258,7 +275,7 @@ Manta AirLab can make a better credibility claim because the repository already 
 That supports a stronger positioning line:
 the tool is not pretending to be deeper than it is, and that honesty is itself a product advantage.
 
-### 15. Better downstream compatibility through export detail control
+### 16. Better downstream compatibility through export detail control
 
 The advantage is not only that export exists.
 It is that the export can be adapted to the receiving tool with less cleanup:
@@ -271,7 +288,7 @@ It is that the export can be adapted to the receiving tool with less cleanup:
 This matters because downstream tools often disagree on what "simple geometry export" should look like.
 Even small controls like these reduce friction in CAD import, scripting pipelines, and CAM preparation.
 
-### 16. Useful across air and water workflows
+### 17. Useful across air and water workflows
 
 Many airfoil tools are presented mainly in an aircraft context.
 Manta AirLab already supports a broader first-pass workflow by exposing fluid presets for:
@@ -283,7 +300,7 @@ Manta AirLab already supports a broader first-pass workflow by exposing fluid pr
 
 That makes the positioning stronger for hydrofoils, marine appendages, water-channel tests, and mixed educational use cases, without pretending the model is a full specialist solver for each domain.
 
-### 17. Simulation inputs are customizable without leaving the main tool
+### 18. Simulation inputs are customizable without leaving the main tool
 
 The quick aerodynamic model is not locked to one rigid preset.
 The current app already supports meaningful customization of the simulation inputs, including:
@@ -298,7 +315,7 @@ The current app already supports meaningful customization of the simulation inpu
 
 That is useful because it lets the user tune the first-pass estimate toward a more relevant scenario without leaving the tool or writing a separate script.
 
-### 18. Handles orientation and mirrored use cases without redrawing geometry
+### 19. Handles orientation and mirrored use cases without redrawing geometry
 
 In practical workflows, users often need to flip a section, invert a load convention, or prepare mirrored geometry for downstream use.
 Manta AirLab already supports this directly through axis mirroring and rotation controls.
@@ -311,7 +328,7 @@ That is a small feature, but it is a real workflow advantage because it avoids:
 
 This is especially useful for control surfaces, opposite-side parts, inverted use cases, and downforce-oriented studies.
 
-### 19. Point data is inspectable before export
+### 20. Point data is inspectable before export
 
 Some tools generate output files but make the geometry data itself relatively opaque until it is opened elsewhere.
 Manta AirLab already includes an in-app point preview and copy action.
@@ -324,7 +341,7 @@ That gives a few practical benefits:
 
 This is a small but meaningful usability edge for technical users who actually work with coordinate data.
 
-### 20. STL output is already aligned with rapid 3D-print workflows
+### 21. STL output is already aligned with rapid 3D-print workflows
 
 The STL value is not only that a mesh can be exported.
 It is that the tool directly extrudes the current section using the chosen span and writes a ready-to-use ASCII STL.
@@ -338,7 +355,7 @@ That makes it practical for:
 
 For the intended first-pass workflow, that is a real advantage over tools that stop at coordinates or 2D curves.
 
-### 21. Better fit for teaching and first-pass engineering explanation
+### 22. Better fit for teaching and first-pass engineering explanation
 
 Because the tool is focused, visual, and explicit about limits, it is easier to use in contexts where the workflow itself must be understood, not only executed.
 

@@ -1,0 +1,325 @@
+"""
+SQLite read-only access layer for `database/airfoil.db`.
+"""
+
+from __future__ import annotations
+
+import json
+import math
+import sqlite3
+from pathlib import Path
+from typing import Any
+
+
+REPO_ROOT = Path(__file__).resolve().parent
+DEFAULT_DB_PATH = REPO_ROOT / "database" / "airfoil.db"
+
+
+class AirfoilDbError(RuntimeError):
+    pass
+
+
+def _parse_raw_dat_points(raw_dat: str) -> tuple[list[float], list[float]]:
+    x_vals: list[float] = []
+    y_vals: list[float] = []
+    for idx, raw_line in enumerate(raw_dat.splitlines()):
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith(("#", "!", ";", "//")):
+            continue
+        parts = line.replace(",", " ").split()
+        if len(parts) < 2:
+            continue
+        try:
+            x = float(parts[0])
+            y = float(parts[1])
+        except ValueError:
+            if idx == 0:
+                continue
+            continue
+        if not (math.isfinite(x) and math.isfinite(y)):
+            raise AirfoilDbError("Geometry contains non-finite values in raw_dat.")
+        x_vals.append(x)
+        y_vals.append(y)
+    return x_vals, y_vals
+
+
+def _ensure_geometry(x_vals: list[float], y_vals: list[float]) -> tuple[list[float], list[float]]:
+    if len(x_vals) != len(y_vals):
+        raise AirfoilDbError("Geometry length mismatch between x and y arrays.")
+    if len(x_vals) < 3:
+        raise AirfoilDbError("Geometry must contain at least 3 points.")
+    for x, y in zip(x_vals, y_vals):
+        if not (math.isfinite(x) and math.isfinite(y)):
+            raise AirfoilDbError("Geometry contains non-finite values.")
+    return x_vals, y_vals
+
+
+class AirfoilDb:
+    def __init__(self, db_path: Path | str | None = None):
+        self.db_path = Path(db_path) if db_path is not None else DEFAULT_DB_PATH
+
+    def _connect(self) -> sqlite3.Connection:
+        resolved = self.db_path.resolve()
+        if not resolved.exists():
+            raise AirfoilDbError(f"Database not found: {resolved}")
+        uri = f"file:{resolved.as_posix()}?mode=ro"
+        con = sqlite3.connect(uri, uri=True)
+        con.row_factory = sqlite3.Row
+        return con
+
+    def list_profiles(
+        self,
+        *,
+        include_excluded: bool = False,
+        only_valid_geometry: bool = True,
+        only_xfoil_compatible: bool = False,
+        search: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        where_parts: list[str] = []
+        params: list[Any] = []
+
+        if not include_excluded:
+            where_parts.append("COALESCE(exclude_from_final, 0) = 0")
+        if only_valid_geometry:
+            where_parts.append("COALESCE(is_valid_geometry, 0) = 1")
+        if only_xfoil_compatible:
+            where_parts.append("COALESCE(is_xfoil_compatible, 0) = 1")
+        if search:
+            where_parts.append("(name LIKE ? OR title LIKE ? OR family LIKE ?)")
+            token = f"%{search.strip()}%"
+            params.extend([token, token, token])
+
+        where_sql = f"WHERE {' AND '.join(where_parts)}" if where_parts else ""
+        limit_sql = " LIMIT ?" if limit is not None and limit > 0 else ""
+        if limit_sql:
+            params.append(limit)
+
+        query = (
+            "SELECT name, title, family, source, source_url, n_points, "
+            "max_thickness, max_thickness_x, max_camber, max_camber_x, "
+            "is_valid_geometry, is_xfoil_compatible, exclude_from_final "
+            "FROM airfoils "
+            f"{where_sql} "
+            "ORDER BY name ASC"
+            f"{limit_sql}"
+        )
+
+        with self._connect() as con:
+            rows = con.execute(query, params).fetchall()
+        return [dict(row) for row in rows]
+
+    def list_profiles_with_ratings(
+        self,
+        *,
+        include_excluded: bool = False,
+        only_valid_geometry: bool = True,
+        only_xfoil_compatible: bool = False,
+        search: str | None = None,
+        usage_filter: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        where_parts: list[str] = []
+        params: list[Any] = []
+
+        if not include_excluded:
+            where_parts.append("COALESCE(a.exclude_from_final, 0) = 0")
+        if only_valid_geometry:
+            where_parts.append("COALESCE(a.is_valid_geometry, 0) = 1")
+        if only_xfoil_compatible:
+            where_parts.append("COALESCE(a.is_xfoil_compatible, 0) = 1")
+        if search:
+            where_parts.append("(a.name LIKE ? OR a.title LIKE ? OR a.family LIKE ?)")
+            token = f"%{search.strip()}%"
+            params.extend([token, token, token])
+        if usage_filter:
+            where_parts.append(
+                "EXISTS ("
+                "SELECT 1 FROM airfoil_applications ap "
+                "WHERE ap.matched_profile_name = a.name "
+                "AND (ap.role_label LIKE ? OR ap.aircraft_section LIKE ? OR ap.aircraft_name LIKE ?)"
+                ")"
+            )
+            u = f"%{usage_filter.strip()}%"
+            params.extend([u, u, u])
+
+        where_sql = f"WHERE {' AND '.join(where_parts)}" if where_parts else ""
+        limit_sql = " LIMIT ?" if limit is not None and limit > 0 else ""
+        if limit_sql:
+            params.append(limit)
+
+        query = (
+            "SELECT "
+            "a.name, a.title, a.family, a.source, a.source_url, a.n_points, "
+            "a.max_thickness, a.max_thickness_x, a.max_camber, a.max_camber_x, "
+            "a.is_valid_geometry, a.is_xfoil_compatible, a.exclude_from_final, "
+            "ar.performance_score, ar.docility_score, ar.robustness_score, ar.confidence_score, "
+            "ar.rating_version, ar.rating_notes, "
+            "("
+            "SELECT ap.role_label FROM airfoil_applications ap "
+            "WHERE ap.matched_profile_name = a.name AND ap.role_label IS NOT NULL "
+            "ORDER BY COALESCE(ap.confidence, 0) DESC, ap.id DESC LIMIT 1"
+            ") AS top_usage "
+            "FROM airfoils a "
+            "LEFT JOIN airfoil_ratings ar "
+            "ON ar.id = ("
+            "SELECT ar2.id FROM airfoil_ratings ar2 "
+            "WHERE ar2.airfoil_name = a.name "
+            "ORDER BY ar2.id DESC LIMIT 1"
+            ") "
+            f"{where_sql} "
+            "ORDER BY a.name ASC"
+            f"{limit_sql}"
+        )
+
+        with self._connect() as con:
+            rows = con.execute(query, params).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_profile_geometry(self, profile_name: str) -> dict[str, Any]:
+        name = profile_name.strip()
+        if not name:
+            raise AirfoilDbError("profile_name is required.")
+
+        query = (
+            "SELECT name, title, family, n_points, x_json, y_json, raw_dat "
+            "FROM airfoils WHERE name = ?"
+        )
+        with self._connect() as con:
+            row = con.execute(query, [name]).fetchone()
+        if row is None:
+            raise AirfoilDbError(f"Profile not found: {name}")
+
+        source = ""
+        if row["x_json"] and row["y_json"]:
+            try:
+                x_vals = [float(v) for v in json.loads(row["x_json"])]
+                y_vals = [float(v) for v in json.loads(row["y_json"])]
+                source = "json"
+            except (TypeError, ValueError, json.JSONDecodeError) as exc:
+                raise AirfoilDbError(f"Invalid x_json/y_json for profile: {name}") from exc
+        elif row["raw_dat"]:
+            x_vals, y_vals = _parse_raw_dat_points(str(row["raw_dat"]))
+            source = "raw_dat"
+        else:
+            raise AirfoilDbError(f"No geometry data for profile: {name}")
+
+        x_vals, y_vals = _ensure_geometry(x_vals, y_vals)
+        return {
+            "name": row["name"],
+            "title": row["title"],
+            "family": row["family"],
+            "n_points": row["n_points"],
+            "x": x_vals,
+            "y": y_vals,
+            "source": source,
+        }
+
+    def list_polar_sets(self, profile_name: str) -> list[dict[str, Any]]:
+        query = (
+            "SELECT mach, ncrit, COUNT(*) AS rows_count, "
+            "SUM(CASE WHEN COALESCE(converged, 0) = 1 THEN 1 ELSE 0 END) AS converged_rows "
+            "FROM airfoil_polars_xfoil "
+            "WHERE airfoil_name = ? "
+            "GROUP BY mach, ncrit "
+            "ORDER BY rows_count DESC, mach ASC, ncrit ASC"
+        )
+        with self._connect() as con:
+            rows = con.execute(query, [profile_name]).fetchall()
+        return [dict(row) for row in rows]
+
+    def list_reynolds(
+        self,
+        profile_name: str,
+        *,
+        mach: float | None = None,
+        ncrit: float | None = None,
+        converged_only: bool = True,
+    ) -> list[float]:
+        where_parts = ["airfoil_name = ?"]
+        params: list[Any] = [profile_name]
+        if mach is not None:
+            where_parts.append("mach = ?")
+            params.append(float(mach))
+        if ncrit is not None:
+            where_parts.append("ncrit = ?")
+            params.append(float(ncrit))
+        if converged_only:
+            where_parts.append("COALESCE(converged, 0) = 1")
+
+        where_sql = " AND ".join(where_parts)
+        query = (
+            "SELECT DISTINCT reynolds FROM airfoil_polars_xfoil "
+            f"WHERE {where_sql} "
+            "ORDER BY reynolds ASC"
+        )
+        with self._connect() as con:
+            rows = con.execute(query, params).fetchall()
+        return [float(row["reynolds"]) for row in rows]
+
+    def get_polar_rows(
+        self,
+        profile_name: str,
+        reynolds: float,
+        *,
+        mach: float | None = None,
+        ncrit: float | None = None,
+        converged_only: bool = True,
+    ) -> list[dict[str, Any]]:
+        where_parts = ["airfoil_name = ?", "reynolds = ?"]
+        params: list[Any] = [profile_name, float(reynolds)]
+        if mach is not None:
+            where_parts.append("mach = ?")
+            params.append(float(mach))
+        if ncrit is not None:
+            where_parts.append("ncrit = ?")
+            params.append(float(ncrit))
+        if converged_only:
+            where_parts.append("COALESCE(converged, 0) = 1")
+
+        where_sql = " AND ".join(where_parts)
+        query = (
+            "SELECT reynolds, mach, ncrit, alpha_deg, cl, cd, cm, converged "
+            "FROM airfoil_polars_xfoil "
+            f"WHERE {where_sql} "
+            "ORDER BY alpha_deg ASC"
+        )
+        with self._connect() as con:
+            rows = con.execute(query, params).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_profile_rating(self, profile_name: str) -> dict[str, Any] | None:
+        query = (
+            "SELECT airfoil_name, performance_score, docility_score, robustness_score, "
+            "confidence_score, rating_version, rating_notes, created_at "
+            "FROM airfoil_ratings "
+            "WHERE airfoil_name = ? "
+            "ORDER BY id DESC LIMIT 1"
+        )
+        with self._connect() as con:
+            row = con.execute(query, [profile_name]).fetchone()
+        return dict(row) if row is not None else None
+
+    def list_profile_usage(self, profile_name: str, limit: int = 30) -> list[dict[str, Any]]:
+        cap = max(1, int(limit))
+        query = (
+            "SELECT matched_profile_name, aircraft_name, aircraft_section, role_code, role_label, "
+            "confidence, source, source_url "
+            "FROM airfoil_applications "
+            "WHERE matched_profile_name = ? "
+            "ORDER BY confidence DESC, aircraft_name ASC "
+            "LIMIT ?"
+        )
+        with self._connect() as con:
+            rows = con.execute(query, [profile_name, cap]).fetchall()
+        return [dict(row) for row in rows]
+
+
+if __name__ == "__main__":
+    db = AirfoilDb()
+    profiles = db.list_profiles(limit=5)
+    print(f"profiles={len(profiles)}")
+    for item in profiles:
+        print(item["name"], item.get("title") or "")

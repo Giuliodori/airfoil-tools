@@ -123,20 +123,43 @@ def _prune_xfoil_directory(keep_exe: Path):
                 pass
 
 
-def ensure_airfoil_db(*, assume_yes=False):
+def ensure_airfoil_db(*, assume_yes=False, refresh_if_exists=False):
     ensure_local_directories()
-    if AIRFOIL_DB_PATH.exists():
+    db_exists = AIRFOIL_DB_PATH.exists()
+    if db_exists and not refresh_if_exists:
         return AIRFOIL_DB_PATH
 
-    message = (
-        "The local airfoil database is missing.\n"
-        f"Download it now to:\n{AIRFOIL_DB_PATH}"
-    )
-    if not _prompt_yes_no("Install airfoil database", message, assume_yes=assume_yes):
+    if db_exists:
+        message = (
+            "Local airfoil database found.\n"
+            "Download and replace it with the latest release?\n\n"
+            f"Target:\n{AIRFOIL_DB_PATH}"
+        )
+        title = "Update airfoil database"
+    else:
+        message = (
+            "The local airfoil database is missing.\n"
+            f"Download it now to:\n{AIRFOIL_DB_PATH}"
+        )
+        title = "Install airfoil database"
+
+    if not _prompt_yes_no(title, message, assume_yes=assume_yes):
         return None
 
     try:
-        _download_to_path(AIRFOIL_DB_URL, AIRFOIL_DB_PATH)
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=".airfoil.db.tmp", dir=str(DATABASE_DIR)
+        ) as tmp:
+            tmp_path = Path(tmp.name)
+        try:
+            _download_to_path(AIRFOIL_DB_URL, tmp_path)
+            tmp_path.replace(AIRFOIL_DB_PATH)
+        finally:
+            if tmp_path.exists():
+                try:
+                    tmp_path.unlink()
+                except OSError:
+                    pass
     except Exception as exc:
         _show_error("Download failed", f"Unable to download airfoil.db.\n\n{exc}")
         return None
@@ -177,11 +200,20 @@ def ensure_xfoil(*, assume_yes=False):
     return None
 
 
-def ensure_runtime_assets(*, include_airfoil_db=True, include_xfoil=True, assume_yes=False):
+def ensure_runtime_assets(
+    *,
+    include_airfoil_db=True,
+    include_xfoil=True,
+    assume_yes=False,
+    refresh_airfoil_db=False,
+):
     ensure_local_directories()
     results = {}
     if include_airfoil_db:
-        results["airfoil_db"] = ensure_airfoil_db(assume_yes=assume_yes)
+        results["airfoil_db"] = ensure_airfoil_db(
+            assume_yes=assume_yes,
+            refresh_if_exists=refresh_airfoil_db,
+        )
     if include_xfoil:
         results["xfoil"] = ensure_xfoil(assume_yes=assume_yes)
     return results
