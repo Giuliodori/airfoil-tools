@@ -56,11 +56,11 @@ Manta Airlab compresses that workflow into one local app with direct GUI editing
 
 ![Manta](images/manta.jpg)
 
-## Fastest way to try it (Windows)
+## Quick start (Windows)
 
-1. Download `Manta_Airfoil_Tools_portable_<version>.exe` from the latest release.
-2. Run `dist\Manta_Airfoil_Tools_portable_<version>.exe` if you cloned the repository.
-3. Alternative from source folder: run `manta_airfoil_tools.bat`.
+1. Download `Manta_Airfoil_Tools_setup_<version>.exe` from the latest release.
+2. Install it.
+3. Launch the program.
 
 Unsigned executables may show a SmartScreen prompt on first launch.
 
