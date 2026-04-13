@@ -1,10 +1,8 @@
-# <img src="images/logo_manta_air_lab.svg" alt="Manta Airlab logo" width="34" style="vertical-align: middle;"> Manta Airfoil Tools
+# <img src="images/logo_manta_air_lab.svg" alt="Manta Airlab logo" width="36" style="vertical-align: middle;"> Manta Airfoil Tools
 
 [![Latest Release](https://img.shields.io/github/v/release/giuliodori/manta-airfoil-tools)](https://github.com/giuliodori/manta-airfoil-tools/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/giuliodori/manta-airfoil-tools/ci.yml?branch=main)](https://github.com/giuliodori/manta-airfoil-tools/actions)
 [![License: GPL-3.0-only](https://img.shields.io/badge/License-GPL--3.0--only-blue.svg)](LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![Platform: Windows](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white)](https://github.com/giuliodori/manta-airfoil-tools/releases/latest)
 [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/giuliodori/manta-airfoil-tools/total)](https://github.com/giuliodori/manta-airfoil-tools/releases)
 
 Manta Airfoil Tools is a desktop app for creating and testing airfoil shapes (the curved shape that helps airplanes fly and hydrofoils generate lift).
