@@ -126,6 +126,20 @@ class AirfoilDb:
             rows = con.execute(query, params).fetchall()
         return [dict(row) for row in rows]
 
+    def list_filter_presets(self) -> list[dict[str, Any]]:
+        with self._connect() as con:
+            if not self._table_exists(con, "airfoil_filter_presets"):
+                return []
+            rows = con.execute(
+                """
+                SELECT label, profile_type_filter, usage_filter, display_order, enabled
+                FROM airfoil_filter_presets
+                WHERE COALESCE(enabled, 1) = 1
+                ORDER BY display_order ASC, label ASC
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def list_profiles_with_ratings(
         self,
         *,
@@ -135,6 +149,7 @@ class AirfoilDb:
         search: str | None = None,
         usage_filter: str | None = None,
         profile_type_filter: str | None = None,
+        autostable_min_score: float | None = None,
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
         where_parts: list[str] = []
@@ -174,6 +189,7 @@ class AirfoilDb:
                 top_aircraft_expr = "aus.top_aircraft"
                 top_usages_expr = "aus.top_usages"
                 usage_count_expr = "aus.usage_count"
+                autostable_score_expr = "aus.autostable_score"
             else:
                 usage_join_sql = ""
                 top_usage_expr = (
@@ -212,15 +228,18 @@ class AirfoilDb:
                     "WHERE ap.matched_profile_name = a.name"
                     ")"
                 )
+                autostable_score_expr = "NULL"
 
             if profile_type_token:
                 token_lower = profile_type_token.lower()
                 if (
                     token_lower == "autostable"
                     and has_usage_summary
-                    and "autostable_flag" in usage_summary_cols
+                    and "autostable_score" in usage_summary_cols
                 ):
-                    where_parts.append("COALESCE(aus.autostable_flag, 0) = 1")
+                    min_score = float(autostable_min_score if autostable_min_score is not None else 20.0)
+                    where_parts.append("COALESCE(aus.autostable_score, -1000.0) >= ?")
+                    params.append(min_score)
                 else:
                     where_parts.append(
                         "EXISTS ("
@@ -261,7 +280,8 @@ class AirfoilDb:
                 f"{top_usage_expr} AS top_usage, "
                 f"{top_aircraft_expr} AS top_aircraft, "
                 f"{top_usages_expr} AS top_usages, "
-                f"{usage_count_expr} AS usage_count "
+                f"{usage_count_expr} AS usage_count, "
+                f"{autostable_score_expr} AS autostable_score "
                 "FROM airfoils a "
                 "LEFT JOIN latest_ratings ar ON ar.airfoil_name = a.name "
                 f"{usage_join_sql}"

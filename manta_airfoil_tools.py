@@ -138,14 +138,14 @@ THEME_KEY_TO_LABEL = {
 }
 THEME_OPTION_LABELS = tuple(THEME_LABEL_TO_KEY.keys())
 
-LIBRARY_USAGE_PRESET_TOKENS = {
-    "All": "",
-    "Symmetric": "symmetric",
-    "Autostable": "autostable",
-    "Rotating": "rotor_efficiency",
-    "High Lift": "high_lift",
-    "General Purpose": "general_purpose",
-}
+DEFAULT_LIBRARY_USAGE_PRESETS = [
+    {"label": "All", "profile_type_filter": "", "usage_filter": "", "display_order": 0},
+    {"label": "Symmetric", "profile_type_filter": "symmetric", "usage_filter": "", "display_order": 10},
+    {"label": "Autostable", "profile_type_filter": "autostable", "usage_filter": "", "display_order": 20},
+    {"label": "Rotating", "profile_type_filter": "rotor_efficiency", "usage_filter": "", "display_order": 30},
+    {"label": "High Lift", "profile_type_filter": "high_lift", "usage_filter": "", "display_order": 40},
+    {"label": "General Purpose", "profile_type_filter": "general_purpose", "usage_filter": "", "display_order": 50},
+]
 
 
 def _load_plotting_deps():
@@ -215,6 +215,10 @@ class App:
         self._library_browser_refresh_job = None
         self._syncing_code = False
         self._airfoil_db = AirfoilDb()
+        self._library_usage_presets = self._load_library_usage_presets()
+        self._library_usage_preset_map = {
+            (item.get("label") or "").strip(): item for item in self._library_usage_presets
+        }
         self._library_profiles = []
         self._library_geometry_cache = {}
         self._library_polar_sets_cache = {}
@@ -242,6 +246,30 @@ class App:
         self.refresh_library_profiles()
         self.update_source_fields()
         self.update_preview()
+
+    def _load_library_usage_presets(self):
+        presets = []
+        try:
+            presets = self._airfoil_db.list_filter_presets()
+        except Exception:
+            presets = []
+        if not presets:
+            presets = [dict(item) for item in DEFAULT_LIBRARY_USAGE_PRESETS]
+        normalized = []
+        for item in presets:
+            label = (item.get("label") or "").strip()
+            if not label:
+                continue
+            normalized.append(
+                {
+                    "label": label,
+                    "profile_type_filter": (item.get("profile_type_filter") or "").strip(),
+                    "usage_filter": (item.get("usage_filter") or "").strip(),
+                    "display_order": int(item.get("display_order") or 0),
+                }
+            )
+        normalized.sort(key=lambda row: (row["display_order"], row["label"].lower()))
+        return normalized
 
     def configure_initial_window_size(self):
         self.root.update_idletasks()
@@ -1269,7 +1297,8 @@ class App:
 
         chips = ttk.Frame(filters)
         chips.grid(row=2, column=0, columnspan=2, sticky="w")
-        for idx, label in enumerate(LIBRARY_USAGE_PRESET_TOKENS.keys()):
+        preset_labels = [item["label"] for item in self._library_usage_presets]
+        for idx, label in enumerate(preset_labels):
             btn = tk.Button(
                 chips,
                 text=label,
@@ -1288,15 +1317,37 @@ class App:
             )
             btn.grid(row=0, column=idx, padx=(0, 6), pady=2, sticky="w")
             self._library_usage_buttons[label] = btn
+
+        self.library_autostable_slider_frame = ttk.Frame(filters)
+        self.library_autostable_slider_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(2, 2))
+        self.library_autostable_slider = tk.Scale(
+            self.library_autostable_slider_frame,
+            from_=-100,
+            to=100,
+            resolution=1,
+            orient="horizontal",
+            showvalue=False,
+            length=210,
+            variable=self.library_autostable_threshold_var,
+            highlightthickness=0,
+            command=self.on_library_autostable_slider_changed,
+            bg=self.colors["surface"],
+            fg=self.colors["text"],
+            troughcolor=self.colors["entry"],
+            activebackground=self.colors["accent"],
+            bd=0,
+        )
+        self.library_autostable_slider.pack(anchor="w")
         ttk.Label(
             filters,
             text="Click a preset to filter. Use All for the complete list.",
             style="Muted.TLabel",
-        ).grid(row=3, column=0, columnspan=2, sticky="w", pady=(6, 0))
+        ).grid(row=4, column=0, columnspan=2, sticky="w", pady=(6, 0))
         ttk.Label(filters, textvariable=self.library_count_var, style="Muted.TLabel").grid(
-            row=4, column=0, columnspan=2, sticky="w", pady=(4, 0)
+            row=5, column=0, columnspan=2, sticky="w", pady=(4, 0)
         )
         self._refresh_library_usage_preset_buttons()
+        self._refresh_autostable_slider_visibility()
         self._refresh_usage_filter_hint()
 
         radar = ttk.LabelFrame(outer, text="Radar Selection", padding=8)
@@ -1471,8 +1522,12 @@ class App:
         self.library_profile_var = tk.StringVar(value="")
         self.library_search_var = tk.StringVar(value="")
         self.library_usage_search_var = tk.StringVar(value="")
-        self.library_usage_preset_var = tk.StringVar(value="All")
+        self.library_autostable_threshold_var = tk.DoubleVar(value=20.0)
+        default_preset_label = self._library_usage_presets[0]["label"] if self._library_usage_presets else "All"
+        self.library_usage_preset_var = tk.StringVar(value=default_preset_label)
         self._library_usage_buttons = {}
+        self.library_autostable_slider_frame = None
+        self.library_autostable_slider = None
         self._source_entry_buttons = {}
         self.library_count_var = tk.StringVar(value="Profiles: -")
         self.library_radar_hint_var = tk.StringVar(value="Click in the radar to focus matching profiles.")
@@ -2407,13 +2462,23 @@ class App:
 
     def _build_library_browser_rows(self):
         active_key = self.library_usage_preset_var.get().strip() or "All"
-        filter_token = LIBRARY_USAGE_PRESET_TOKENS.get(active_key, None)
-        if filter_token == "":
-            filter_token = None
+        preset = self._library_usage_preset_map.get(active_key, {})
+        profile_filter_token = (preset.get("profile_type_filter") or "").strip() or None
+        preset_usage_filter = (preset.get("usage_filter") or "").strip() or None
+        typed_usage_filter = self.library_usage_search_var.get().strip() or None
+        usage_filter = typed_usage_filter if typed_usage_filter is not None else preset_usage_filter
+        autostable_min_score = None
+        if (profile_filter_token or "").strip().lower() == "autostable":
+            try:
+                autostable_min_score = float(self.library_autostable_threshold_var.get())
+            except Exception:
+                autostable_min_score = 20.0
+            self.library_autostable_threshold_var.set(autostable_min_score)
         rows = self._airfoil_db.list_profiles_with_ratings(
             search=self.library_search_var.get().strip() or None,
-            usage_filter=self.library_usage_search_var.get().strip() or None,
-            profile_type_filter=filter_token,
+            usage_filter=usage_filter,
+            profile_type_filter=profile_filter_token,
+            autostable_min_score=autostable_min_score,
             limit=3000,
         )
         rows.sort(key=lambda item: (item.get("name") or "").lower())
@@ -2439,14 +2504,32 @@ class App:
 
     def _refresh_usage_filter_hint(self):
         active_key = self.library_usage_preset_var.get().strip()
-        if active_key and active_key != "All":
+        preset = self._library_usage_preset_map.get(active_key, {})
+        has_filter = bool((preset.get("profile_type_filter") or "").strip() or (preset.get("usage_filter") or "").strip())
+        if active_key and has_filter:
             self.library_radar_hint_var.set(f"Active filter: {active_key}.")
         else:
             self.library_radar_hint_var.set("Click in the radar to focus matching profiles.")
 
+    def _refresh_autostable_slider_visibility(self):
+        if self.library_autostable_slider_frame is None:
+            return
+        active_key = self.library_usage_preset_var.get().strip()
+        preset = self._library_usage_preset_map.get(active_key, {})
+        profile_type_filter = (preset.get("profile_type_filter") or "").strip().lower()
+        if profile_type_filter == "autostable":
+            self.library_autostable_slider_frame.grid()
+        else:
+            self.library_autostable_slider_frame.grid_remove()
+
+    def on_library_autostable_slider_changed(self, _value=None):
+        self.schedule_library_browser_refresh()
+
     def on_library_usage_preset_clicked(self, key):
-        self.library_usage_preset_var.set(key or "All")
+        fallback = self._library_usage_presets[0]["label"] if self._library_usage_presets else "All"
+        self.library_usage_preset_var.set(key or fallback)
         self._refresh_library_usage_preset_buttons()
+        self._refresh_autostable_slider_visibility()
         self._refresh_usage_filter_hint()
         self.refresh_library_browser_results()
 
@@ -2504,7 +2587,14 @@ class App:
         rob = float(item.get("robustness_score") or 0.0)
         conf = float(item.get("confidence_score") or 0.0)
         vers = float(item.get("versatility_score") or 0.0)
-        label = f"{name} | P={perf:.1f} D={doc:.1f} R={rob:.1f} C={conf:.1f} V={vers:.1f}"
+        autostable_score = item.get("autostable_score")
+        as_part = ""
+        try:
+            if autostable_score is not None:
+                as_part = f" AS={float(autostable_score):+.0f}"
+        except Exception:
+            as_part = ""
+        label = f"{name} | P={perf:.1f} D={doc:.1f} R={rob:.1f} C={conf:.1f} V={vers:.1f}{as_part}"
         if known_usage:
             if known_aircraft:
                 label = f"{label} | use={usage} @ {aircraft}"
