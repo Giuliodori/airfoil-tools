@@ -28,7 +28,7 @@ import webbrowser
 from tkinter import filedialog, messagebox, ttk
 from pathlib import Path
 import time
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 try:
     import numpy as np
@@ -276,7 +276,10 @@ class App:
     def get_theme_key(self, theme_value: str | None) -> str:
         if theme_value in THEME_PRESETS:
             return theme_value
-        return THEME_LABEL_TO_KEY.get(theme_value, GUI_DEFAULTS["theme"])
+        mapped = THEME_LABEL_TO_KEY.get(theme_value or "", GUI_DEFAULTS["theme"])
+        if mapped in THEME_PRESETS:
+            return mapped
+        return GUI_DEFAULTS["theme"]
 
     def apply_theme(self, theme_value: str | None = None):
         theme_key = self.get_theme_key(theme_value or self.theme_var.get())
@@ -649,7 +652,9 @@ class App:
                     from PIL import Image, ImageTk
 
                     png_bytes = cairosvg.svg2png(url=str(logo_svg_path))
-                    pil_img = Image.open(io.BytesIO(png_bytes))
+                    if not isinstance(png_bytes, (bytes, bytearray)):
+                        continue
+                    pil_img = Image.open(io.BytesIO(bytes(png_bytes)))
                     pil_img.load()
                     if pil_img.width > max_logo_width:
                         scale = pil_img.width / max_logo_width
@@ -2119,8 +2124,9 @@ class App:
         self.ax.xaxis.label.set_color(self.colors["fg"])
         self.ax.yaxis.label.set_color(self.colors["fg"])
         if hasattr(self.ax, "zaxis"):
-            self.ax.zaxis.label.set_color(self.colors["fg"])
-            for axis in (self.ax.xaxis, self.ax.yaxis, self.ax.zaxis):
+            ax3d = cast(Any, self.ax)
+            ax3d.zaxis.label.set_color(self.colors["fg"])
+            for axis in (ax3d.xaxis, ax3d.yaxis, ax3d.zaxis):
                 try:
                     axis.pane.set_facecolor(self.colors["panel_alt"])
                     axis.pane.set_edgecolor(self.colors["muted"])
@@ -2196,13 +2202,14 @@ class App:
             return
 
         if getattr(self.ax, "name", "") == "3d":
+            ax3d = cast(Any, self.ax)
             self._pan_state = {
                 "mode": "3d",
                 "x": event.x,
                 "y": event.y,
-                "xlim": self.ax.get_xlim3d(),
-                "ylim": self.ax.get_ylim3d(),
-                "zlim": self.ax.get_zlim3d(),
+                "xlim": ax3d.get_xlim3d(),
+                "ylim": ax3d.get_ylim3d(),
+                "zlim": ax3d.get_zlim3d(),
             }
         else:
             if event.xdata is None or event.ydata is None:
@@ -2250,9 +2257,10 @@ class App:
         self.ax.set_ylim(new_ymin, new_ymax)
 
     def zoom_3d_axes(self, scale):
-        xlim = self.ax.get_xlim3d()
-        ylim = self.ax.get_ylim3d()
-        zlim = self.ax.get_zlim3d()
+        ax3d = cast(Any, self.ax)
+        xlim = ax3d.get_xlim3d()
+        ylim = ax3d.get_ylim3d()
+        zlim = ax3d.get_zlim3d()
 
         def _scaled_limits(limits):
             lo, hi = limits
@@ -2262,9 +2270,9 @@ class App:
             half = max(half, min_half)
             return center - half, center + half
 
-        self.ax.set_xlim3d(*_scaled_limits(xlim))
-        self.ax.set_ylim3d(*_scaled_limits(ylim))
-        self.ax.set_zlim3d(*_scaled_limits(zlim))
+        ax3d.set_xlim3d(*_scaled_limits(xlim))
+        ax3d.set_ylim3d(*_scaled_limits(ylim))
+        ax3d.set_zlim3d(*_scaled_limits(zlim))
 
     def pan_2d_axes(self, event):
         if event.xdata is None or event.ydata is None:
@@ -2284,6 +2292,7 @@ class App:
         state = self._pan_state
         if state is None:
             return
+        ax3d = cast(Any, self.ax)
         dx_px = event.x - state["x"]
         dy_px = event.y - state["y"]
 
@@ -2299,9 +2308,9 @@ class App:
         shift_y = (dy_px / pixel_ref) * y_span
         shift_z = (dy_px / pixel_ref) * z_span * 0.35
 
-        self.ax.set_xlim3d(xlim[0] + shift_x, xlim[1] + shift_x)
-        self.ax.set_ylim3d(ylim[0] + shift_y, ylim[1] + shift_y)
-        self.ax.set_zlim3d(zlim[0] + shift_z, zlim[1] + shift_z)
+        ax3d.set_xlim3d(xlim[0] + shift_x, xlim[1] + shift_x)
+        ax3d.set_ylim3d(ylim[0] + shift_y, ylim[1] + shift_y)
+        ax3d.set_zlim3d(zlim[0] + shift_z, zlim[1] + shift_z)
 
     def mode_internal_value(self):
         return self.mode_map.get(self.mode_var.get().strip(), "flat")
@@ -2534,7 +2543,14 @@ class App:
         axis_names = ["Performance", "Docility", "Robustness", "Confidence", "Versatility"]
         axis_angles = [math.radians(-90 + idx * 72) for idx in range(5)]
 
-        def _shadow_text(x, y, text, *, anchor="center", font=("Segoe UI", 10, "bold")):
+        def _shadow_text(
+            x,
+            y,
+            text,
+            *,
+            anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "center",
+            font=("Segoe UI", 10, "bold"),
+        ):
             cv.create_text(
                 x + 1,
                 y + 1,
@@ -4106,55 +4122,56 @@ class App:
             f"{profile_label} | chord={vals['chord'] * 1000:.1f} mm | "
             f"span={vals['span'] * 1000:.1f} mm | {mode_txt}"
         )
-        self.ax.set_title(title)
-        self.ax.set_xlabel("X [mm]")
-        self.ax.set_ylabel("Y [mm]")
-        self.ax.set_zlabel("Z [mm]")
-        self.ax.grid(True, color=self.colors["grid"], alpha=0.7, linestyle="--", linewidth=0.6)
-        self.ax.tick_params(colors=self.colors["fg"])
-        self.ax.set_proj_type("persp")
+        ax3d = cast(Any, self.ax)
+        ax3d.set_title(title)
+        ax3d.set_xlabel("X [mm]")
+        ax3d.set_ylabel("Y [mm]")
+        ax3d.set_zlabel("Z [mm]")
+        ax3d.grid(True, color=self.colors["grid"], alpha=0.7, linestyle="--", linewidth=0.6)
+        ax3d.tick_params(colors=self.colors["fg"])
+        ax3d.set_proj_type("persp")
         try:
-            self.ax.set_anchor("C")
+            ax3d.set_anchor("C")
         except Exception:
             pass
 
         xyz = np_mod.vstack([root_mm, tip_mm])
         display = compute_display_limits_3d(xyz)
-        self.ax.set_xlim(*display["xlim"])
-        self.ax.set_ylim(*display["ylim"])
-        self.ax.set_zlim(*display["zlim"])
+        ax3d.set_xlim(*display["xlim"])
+        ax3d.set_ylim(*display["ylim"])
+        ax3d.set_zlim(*display["zlim"])
         try:
             ax_span, ay_span, az_span = display["aspect"]
-            self.ax.set_box_aspect(
+            ax3d.set_box_aspect(
                 (ax_span * 1.45, ay_span * 0.62, az_span * 0.44),
                 zoom=1.18,
             )
         except TypeError:
             try:
-                self.ax.set_box_aspect((ax_span * 1.45, ay_span * 0.62, az_span * 0.44))
+                ax3d.set_box_aspect((ax_span * 1.45, ay_span * 0.62, az_span * 0.44))
             except Exception:
                 pass
         except Exception:
             pass
-        self.ax.tick_params(axis="both", which="major", pad=0, labelsize=7)
+        ax3d.tick_params(axis="both", which="major", pad=0, labelsize=7)
         try:
-            self.ax.zaxis.set_tick_params(pad=0, labelsize=7)
+            ax3d.zaxis.set_tick_params(pad=0, labelsize=7)
         except Exception:
             pass
         try:
-            self.ax.yaxis.labelpad = 2
-            self.ax.zaxis.labelpad = 2
-            self.ax.xaxis.labelpad = 2
+            ax3d.yaxis.labelpad = 2
+            ax3d.zaxis.labelpad = 2
+            ax3d.xaxis.labelpad = 2
         except Exception:
             pass
-        self.ax.view_init(
+        ax3d.view_init(
             elev=self._default_3d_view["elev"],
             azim=self._default_3d_view["azim"],
         )
         self.configure_plot_theme()
         self.canvas.draw_idle()
 
-    def show_plot_error(self, msg):
+    def show_plot_error(self, msg: str):
         self.ensure_plot_axes("2d")
         self.ax.clear()
         self.ax.set_facecolor(self.colors["plot_bg"])
