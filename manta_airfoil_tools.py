@@ -1331,7 +1331,7 @@ class App:
             variable=self.library_autostable_threshold_var,
             highlightthickness=0,
             command=self.on_library_autostable_slider_changed,
-            bg=self.colors["surface"],
+            bg=self.colors["panel"],
             fg=self.colors["text"],
             troughcolor=self.colors["entry"],
             activebackground=self.colors["accent"],
