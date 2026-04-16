@@ -139,6 +139,7 @@ class AirfoilDb:
     ) -> list[dict[str, Any]]:
         where_parts: list[str] = []
         params: list[Any] = []
+        profile_type_token = (profile_type_filter or "").strip()
 
         if not include_excluded:
             where_parts.append("COALESCE(a.exclude_from_final, 0) = 0")
@@ -160,32 +161,12 @@ class AirfoilDb:
             )
             u = f"%{usage_filter.strip()}%"
             params.extend([u, u, u])
-        if profile_type_filter:
-            where_parts.append(
-                "EXISTS ("
-                "SELECT 1 FROM airfoil_applications ap "
-                "WHERE ap.matched_profile_name = a.name "
-                "AND ("
-                "COALESCE(ap.profile_type_tag, '') = ? COLLATE NOCASE "
-                "OR COALESCE(ap.reason_tag, '') = ? COLLATE NOCASE "
-                "OR LOWER(COALESCE(ap.role_label, '')) LIKE ? "
-                "OR LOWER(COALESCE(ap.aircraft_section, '')) LIKE ?"
-                ")"
-                ")"
-            )
-            exact = profile_type_filter.strip()
-            token = f"%{exact.lower()}%"
-            params.extend([exact, exact, token, token])
-
-        where_sql = f"WHERE {' AND '.join(where_parts)}" if where_parts else ""
-        limit_sql = " LIMIT ?" if limit is not None and limit > 0 else ""
-        if limit_sql:
-            params.append(limit)
 
         with self._connect() as con:
             rating_cols = self._table_columns(con, "airfoil_ratings")
             versatility_expr = "ar.versatility_score" if "versatility_score" in rating_cols else "0.0"
             has_usage_summary = self._table_exists(con, "airfoil_usage_summary")
+            usage_summary_cols = self._table_columns(con, "airfoil_usage_summary") if has_usage_summary else set()
 
             if has_usage_summary:
                 usage_join_sql = "LEFT JOIN airfoil_usage_summary aus ON aus.airfoil_name = a.name "
@@ -232,6 +213,36 @@ class AirfoilDb:
                     ")"
                 )
 
+            if profile_type_token:
+                token_lower = profile_type_token.lower()
+                if (
+                    token_lower == "autostable"
+                    and has_usage_summary
+                    and "autostable_flag" in usage_summary_cols
+                ):
+                    where_parts.append("COALESCE(aus.autostable_flag, 0) = 1")
+                else:
+                    where_parts.append(
+                        "EXISTS ("
+                        "SELECT 1 FROM airfoil_applications ap "
+                        "WHERE ap.matched_profile_name = a.name "
+                        "AND ("
+                        "COALESCE(ap.profile_type_tag, '') = ? COLLATE NOCASE "
+                        "OR COALESCE(ap.reason_tag, '') = ? COLLATE NOCASE "
+                        "OR LOWER(COALESCE(ap.role_label, '')) LIKE ? "
+                        "OR LOWER(COALESCE(ap.aircraft_section, '')) LIKE ?"
+                        ")"
+                        ")"
+                    )
+                    like_token = f"%{token_lower}%"
+                    params.extend([profile_type_token, profile_type_token, like_token, like_token])
+
+            where_sql = f"WHERE {' AND '.join(where_parts)}" if where_parts else ""
+            limit_sql = " LIMIT ?" if limit is not None and limit > 0 else ""
+            query_params = list(params)
+            if limit_sql:
+                query_params.append(limit)
+
             query = (
                 "WITH latest_ratings AS ("
                 "SELECT r.* FROM airfoil_ratings r "
@@ -258,7 +269,7 @@ class AirfoilDb:
                 "ORDER BY a.name ASC"
                 f"{limit_sql}"
             )
-            rows = con.execute(query, params).fetchall()
+            rows = con.execute(query, query_params).fetchall()
         return [dict(row) for row in rows]
 
     def get_profile_geometry(self, profile_name: str) -> dict[str, Any]:

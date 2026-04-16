@@ -141,7 +141,7 @@ THEME_OPTION_LABELS = tuple(THEME_LABEL_TO_KEY.keys())
 LIBRARY_USAGE_PRESET_TOKENS = {
     "All": "",
     "Symmetric": "symmetric",
-    "Autostable": "cambered_aft",
+    "Autostable": "autostable",
     "Rotating": "rotor_efficiency",
     "High Lift": "high_lift",
     "General Purpose": "general_purpose",
