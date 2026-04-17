@@ -144,9 +144,10 @@ DEFAULT_LIBRARY_USAGE_PRESETS = [
     {"label": "All", "profile_type_filter": "", "usage_filter": "", "display_order": 0},
     {"label": "Symmetric", "profile_type_filter": "symmetric", "usage_filter": "", "display_order": 10},
     {"label": "Autostable", "profile_type_filter": "autostable", "usage_filter": "", "display_order": 20},
-    {"label": "Rotating", "profile_type_filter": "rotor_efficiency", "usage_filter": "", "display_order": 30},
+    {"label": "Rotating", "profile_type_filter": "rotating", "usage_filter": "", "display_order": 30},
     {"label": "High Lift", "profile_type_filter": "high_lift", "usage_filter": "", "display_order": 40},
     {"label": "Famous", "profile_type_filter": "famous", "usage_filter": "", "display_order": 50},
+    {"label": "Hydro", "profile_type_filter": "hydro", "usage_filter": "", "display_order": 60},
 ]
 
 
@@ -245,6 +246,22 @@ class App:
                 if (item.get("profile_type_filter") or "").strip().lower() == "high_lift"
             ),
             "High Lift",
+        )
+        self._rotating_preset_label = next(
+            (
+                (item.get("label") or "").strip()
+                for item in self._library_usage_presets
+                if (item.get("profile_type_filter") or "").strip().lower() == "rotating"
+            ),
+            "Rotating",
+        )
+        self._hydro_preset_label = next(
+            (
+                (item.get("label") or "").strip()
+                for item in self._library_usage_presets
+                if (item.get("profile_type_filter") or "").strip().lower() == "hydro"
+            ),
+            "Hydro",
         )
         self._famous_preset_label = next(
             (
@@ -1344,8 +1361,10 @@ class App:
         chips.grid(row=2, column=0, columnspan=2, sticky="w")
         preset_labels = [item["label"] for item in self._library_usage_presets]
         autostable_col = None
+        rotating_col = None
         high_lift_col = None
         famous_col = None
+        hydro_col = None
         for idx, label in enumerate(preset_labels):
             btn = tk.Button(
                 chips,
@@ -1367,10 +1386,14 @@ class App:
             self._library_usage_buttons[label] = btn
             if label == self._autostable_preset_label:
                 autostable_col = idx
+            if label == self._rotating_preset_label:
+                rotating_col = idx
             if label == self._high_lift_preset_label:
                 high_lift_col = idx
             if label == self._famous_preset_label:
                 famous_col = idx
+            if label == self._hydro_preset_label:
+                hydro_col = idx
 
         if autostable_col is None:
             autostable_col = 0
@@ -1378,9 +1401,15 @@ class App:
         if high_lift_col is None:
             high_lift_col = 0
         chips.grid_columnconfigure(high_lift_col, weight=1)
+        if rotating_col is None:
+            rotating_col = 0
+        chips.grid_columnconfigure(rotating_col, weight=1)
         if famous_col is None:
             famous_col = 0
         chips.grid_columnconfigure(famous_col, weight=1)
+        if hydro_col is None:
+            hydro_col = 0
+        chips.grid_columnconfigure(hydro_col, weight=1)
 
         self.library_autostable_slider_frame = ttk.Frame(chips)
         self.library_autostable_slider_frame.grid(
@@ -1428,6 +1457,29 @@ class App:
         )
         self.library_high_lift_slider.pack(fill="x")
 
+        self.library_rotating_slider_frame = ttk.Frame(chips)
+        self.library_rotating_slider_frame.grid(
+            row=1, column=rotating_col, sticky="ew", padx=(0, 6), pady=(0, 2)
+        )
+        self.library_rotating_slider = tk.Scale(
+            self.library_rotating_slider_frame,
+            from_=0,
+            to=100,
+            resolution=1,
+            orient="horizontal",
+            showvalue=False,
+            length=80,
+            variable=self.library_rotating_threshold_var,
+            highlightthickness=0,
+            command=self.on_library_rotating_slider_changed,
+            bg=self.colors["panel"],
+            fg=self.colors["text"],
+            troughcolor=self.colors["entry"],
+            activebackground=self.colors["accent"],
+            bd=0,
+        )
+        self.library_rotating_slider.pack(fill="x")
+
         self.library_famous_slider_frame = ttk.Frame(chips)
         self.library_famous_slider_frame.grid(
             row=1, column=famous_col, sticky="ew", padx=(0, 6), pady=(0, 2)
@@ -1450,6 +1502,28 @@ class App:
             bd=0,
         )
         self.library_famous_slider.pack(fill="x")
+        self.library_hydro_slider_frame = ttk.Frame(chips)
+        self.library_hydro_slider_frame.grid(
+            row=1, column=hydro_col, sticky="ew", padx=(0, 6), pady=(0, 2)
+        )
+        self.library_hydro_slider = tk.Scale(
+            self.library_hydro_slider_frame,
+            from_=0,
+            to=100,
+            resolution=1,
+            orient="horizontal",
+            showvalue=False,
+            length=80,
+            variable=self.library_hydro_threshold_var,
+            highlightthickness=0,
+            command=self.on_library_hydro_slider_changed,
+            bg=self.colors["panel"],
+            fg=self.colors["text"],
+            troughcolor=self.colors["entry"],
+            activebackground=self.colors["accent"],
+            bd=0,
+        )
+        self.library_hydro_slider.pack(fill="x")
         ttk.Label(
             filters,
             text="Click presets to toggle filters. All = reset filters.",
@@ -1636,7 +1710,9 @@ class App:
         self.library_usage_search_var = tk.StringVar(value="")
         self.library_autostable_threshold_var = tk.DoubleVar(value=20.0)
         self.library_high_lift_threshold_var = tk.DoubleVar(value=20.0)
+        self.library_rotating_threshold_var = tk.DoubleVar(value=20.0)
         self.library_famous_threshold_var = tk.DoubleVar(value=20.0)
+        self.library_hydro_threshold_var = tk.DoubleVar(value=20.0)
         default_preset_label = (
             self._all_preset_label
             if self._all_preset_label
@@ -1648,8 +1724,12 @@ class App:
         self.library_autostable_slider = None
         self.library_high_lift_slider_frame = None
         self.library_high_lift_slider = None
+        self.library_rotating_slider_frame = None
+        self.library_rotating_slider = None
         self.library_famous_slider_frame = None
         self.library_famous_slider = None
+        self.library_hydro_slider_frame = None
+        self.library_hydro_slider = None
         self._source_entry_buttons = {}
         self.library_count_var = tk.StringVar(value="Profiles: -")
         self.library_radar_hint_var = tk.StringVar(value="Click in the radar to focus matching profiles.")
@@ -2627,6 +2707,22 @@ class App:
                 famous_min_score = 20.0
             famous_min_score = max(0.0, min(100.0, famous_min_score))
             self.library_famous_threshold_var.set(famous_min_score)
+        rotating_min_score = None
+        if any(token.lower() == "rotating" for token in profile_filter_tokens):
+            try:
+                rotating_min_score = float(self.library_rotating_threshold_var.get())
+            except Exception:
+                rotating_min_score = 20.0
+            rotating_min_score = max(0.0, min(100.0, rotating_min_score))
+            self.library_rotating_threshold_var.set(rotating_min_score)
+        hydro_min_score = None
+        if any(token.lower() == "hydro" for token in profile_filter_tokens):
+            try:
+                hydro_min_score = float(self.library_hydro_threshold_var.get())
+            except Exception:
+                hydro_min_score = 20.0
+            hydro_min_score = max(0.0, min(100.0, hydro_min_score))
+            self.library_hydro_threshold_var.set(hydro_min_score)
         rows = self._airfoil_db.list_profiles_with_ratings(
             search=self.library_search_var.get().strip() or None,
             usage_filters=usage_filters or None,
@@ -2634,6 +2730,8 @@ class App:
             autostable_min_score=autostable_min_score,
             high_lift_min_score=high_lift_min_score,
             famous_min_score=famous_min_score,
+            rotating_min_score=rotating_min_score,
+            hydro_min_score=hydro_min_score,
             limit=3000,
         )
         rows.sort(key=lambda item: (item.get("name") or "").lower())
@@ -2682,7 +2780,9 @@ class App:
         pairs = [
             (self._autostable_preset_label, self.library_autostable_slider),
             (self._high_lift_preset_label, self.library_high_lift_slider),
+            (self._rotating_preset_label, self.library_rotating_slider),
             (self._famous_preset_label, self.library_famous_slider),
+            (self._hydro_preset_label, self.library_hydro_slider),
         ]
         for label, slider in pairs:
             if slider is None:
@@ -2708,6 +2808,14 @@ class App:
 
     def on_library_famous_slider_changed(self, _value=None):
         self._activate_preset_for_slider(self._famous_preset_label)
+        self.schedule_library_browser_refresh()
+
+    def on_library_rotating_slider_changed(self, _value=None):
+        self._activate_preset_for_slider(self._rotating_preset_label)
+        self.schedule_library_browser_refresh()
+
+    def on_library_hydro_slider_changed(self, _value=None):
+        self._activate_preset_for_slider(self._hydro_preset_label)
         self.schedule_library_browser_refresh()
 
     def _activate_preset_for_slider(self, label):

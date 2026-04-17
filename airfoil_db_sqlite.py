@@ -154,6 +154,8 @@ class AirfoilDb:
         autostable_min_score: float | None = None,
         high_lift_min_score: float | None = None,
         famous_min_score: float | None = None,
+        rotating_min_score: float | None = None,
+        hydro_min_score: float | None = None,
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
         where_parts: list[str] = []
@@ -215,6 +217,8 @@ class AirfoilDb:
                 autostable_score_expr = "aus.autostable_score"
                 high_lift_score_expr = "aus.high_lift_score"
                 famous_score_expr = "aus.famous_score"
+                rotating_score_expr = "aus.rotating_score" if "rotating_score" in usage_summary_cols else "NULL"
+                hydro_score_expr = "aus.hydro_score" if "hydro_score" in usage_summary_cols else "NULL"
             else:
                 usage_join_sql = ""
                 top_usage_expr = (
@@ -256,6 +260,8 @@ class AirfoilDb:
                 autostable_score_expr = "NULL"
                 high_lift_score_expr = "NULL"
                 famous_score_expr = "NULL"
+                rotating_score_expr = "NULL"
+                hydro_score_expr = "NULL"
 
             if (
                 high_lift_min_score is not None
@@ -273,10 +279,28 @@ class AirfoilDb:
                 min_score = max(0.0, min(100.0, float(famous_min_score)))
                 where_parts.append("COALESCE(aus.famous_score, -1000.0) >= ?")
                 params.append(min_score)
+            if (
+                rotating_min_score is not None
+                and has_usage_summary
+                and "rotating_score" in usage_summary_cols
+            ):
+                min_score = max(0.0, min(100.0, float(rotating_min_score)))
+                where_parts.append("COALESCE(aus.rotating_score, -1000.0) >= ?")
+                params.append(min_score)
+            if (
+                hydro_min_score is not None
+                and has_usage_summary
+                and "hydro_score" in usage_summary_cols
+            ):
+                min_score = max(0.0, min(100.0, float(hydro_min_score)))
+                where_parts.append("COALESCE(aus.hydro_score, -1000.0) >= ?")
+                params.append(min_score)
 
             has_autostable_token = any(token.lower() == "autostable" for token in profile_tokens)
             has_high_lift_token = any(token.lower() == "high_lift" for token in profile_tokens)
             has_famous_token = any(token.lower() == "famous" for token in profile_tokens)
+            has_rotating_token = any(token.lower() == "rotating" for token in profile_tokens)
+            has_hydro_token = any(token.lower() == "hydro" for token in profile_tokens)
             if (
                 has_autostable_token
                 and has_usage_summary
@@ -301,6 +325,22 @@ class AirfoilDb:
             ):
                 where_parts.append("COALESCE(aus.famous_score, -1000.0) >= ?")
                 params.append(0.0)
+            if (
+                has_rotating_token
+                and rotating_min_score is None
+                and has_usage_summary
+                and "rotating_score" in usage_summary_cols
+            ):
+                where_parts.append("COALESCE(aus.rotating_score, -1000.0) >= ?")
+                params.append(20.0)
+            if (
+                has_hydro_token
+                and hydro_min_score is None
+                and has_usage_summary
+                and "hydro_score" in usage_summary_cols
+            ):
+                where_parts.append("COALESCE(aus.hydro_score, -1000.0) >= ?")
+                params.append(20.0)
 
             for profile_token in profile_tokens:
                 token_lower = profile_token.lower()
@@ -320,6 +360,18 @@ class AirfoilDb:
                     token_lower == "famous"
                     and has_usage_summary
                     and "famous_score" in usage_summary_cols
+                ):
+                    continue
+                if (
+                    token_lower == "rotating"
+                    and has_usage_summary
+                    and "rotating_score" in usage_summary_cols
+                ):
+                    continue
+                if (
+                    token_lower == "hydro"
+                    and has_usage_summary
+                    and "hydro_score" in usage_summary_cols
                 ):
                     continue
 
@@ -365,7 +417,9 @@ class AirfoilDb:
                 f"{usage_count_expr} AS usage_count, "
                 f"{autostable_score_expr} AS autostable_score, "
                 f"{high_lift_score_expr} AS high_lift_score, "
-                f"{famous_score_expr} AS famous_score "
+                f"{famous_score_expr} AS famous_score, "
+                f"{rotating_score_expr} AS rotating_score, "
+                f"{hydro_score_expr} AS hydro_score "
                 "FROM airfoils a "
                 "LEFT JOIN latest_ratings ar ON ar.airfoil_name = a.name "
                 f"{usage_join_sql}"
