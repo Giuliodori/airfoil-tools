@@ -10,10 +10,13 @@ In one place, you can pick or generate a profile, preview it in `2D/3D`, get a q
 You can start from standard `NACA` codes or from a built-in library with thousands of real airfoil profiles with geometry, aerodynamic data, performance ratings, and easy profile selection.
 Validation ground truth is experimental data; quick estimates and `XFOIL` are compared against test datasets.
 
-Repository: `manta-airfoil-tools`
-Brand: `Manta Airlab`
-Author: `Fabio Giuliodori`
+
 Open-source sponsor: [`Duilio.cc`](https://duilio.cc)
+
+If this project was useful to you, you can actively support it in two ways:
+
+- Offer me a coffee: [`Buy me a coffee`](https://buymeacoffee.com/giuliodori)
+- Join the project and contribute your skills: [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md)
 
 ![Main GUI](images/gui.png)
 ![Library Browser](images/library_browser.png)
@@ -101,3 +104,4 @@ This project is released under GNU General Public License v3.0 only (`GPL-3.0-on
 Open-source sponsor: [`Duilio.cc`](https://duilio.cc)
 Preferred project attribution: [`docs/ATTRIBUTION.md`](docs/ATTRIBUTION.md)
 Third-party notices and attributions: [`docs/THIRD_PARTY_NOTICES.md`](docs/THIRD_PARTY_NOTICES.md)
+Author: `Fabio Giuliodori`
